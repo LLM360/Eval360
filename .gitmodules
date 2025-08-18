@@ -4,6 +4,3 @@
 [submodule "lm-evaluation-harness"]
 	path = lm-evaluation-harness
 	url = https://github.com/EleutherAI/lm-evaluation-harness.git
-[submodule "HELMET"]
-	path = HELMET
-	url = https://github.com/princeton-nlp/HELMET.git

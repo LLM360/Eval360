@@ -6,8 +6,8 @@
 #SBATCH --mem=0                 # total memory per node (4 GB per cpu-core is default)
 #SBATCH --gres=gpu:8             # number of gpus per node
 #SBATCH --partition=main
-#SBATCH --output=/lustrefs/users/runner/slurm/eval_arc_gsm8k.out
-#SBATCH --error=/lustrefs/users/runner/slurm/eval_arc_gsm8k.err
+#SBATCH --output=/lustrefs/users/runner/slurm/eval_gsm8k_cot_math.out
+#SBATCH --error=/lustrefs/users/runner/slurm/eval_gsm8k_cot_math.err
 
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
@@ -31,24 +31,8 @@ do
 
   echo "${CKPT_DIR}/done.txt exists. Continuing..."
 
-  METRIC_NAME="arc_challenge"
-  NUM_FEWSHOT=25
-  if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
-
-  then
-    echo "eval results for ${iter} exist. Skipping..."
-  else
-    lm_eval --model vllm \
-      --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
-      --tasks ${METRIC_NAME} \
-      --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
-      --batch_size 1 \
-      --num_fewshot $NUM_FEWSHOT \
-      --log_samples
-  fi
-
-  METRIC_NAME="gsm8k"
-  NUM_FEWSHOT=5
+  METRIC_NAME="gsm8k_cot"
+  NUM_FEWSHOT=8
   if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
 
   then
@@ -59,7 +43,23 @@ do
     --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
     --tasks ${METRIC_NAME} \
     --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
-    --batch_size 1 \
+    --batch_size auto \
+    --num_fewshot $NUM_FEWSHOT \
+    --log_samples
+  fi
+  METRIC_NAME="minerva_math"
+  NUM_FEWSHOT=4
+  if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
+
+  then
+    echo "eval results for ${iter} exist. Skipping..."
+  else
+
+    lm_eval --model vllm \
+    --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
+    --tasks ${METRIC_NAME} \
+    --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
+    --batch_size auto \
     --num_fewshot $NUM_FEWSHOT \
     --log_samples
   fi
