@@ -14,11 +14,13 @@ export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
 
 # HF_DIR=/lustrefs/users/runner/checkpoints/huggingface
 MODEL_NAME=$1
+START_ITER=$2
+END_ITER=$3
 CKPT_DIR="/lustrefs/users/runner/workspace/checkpoints"
 HF_DIR="${CKPT_DIR}/huggingface/${MODEL_NAME}/checkpoints"
 echo $HF_DIR
 
-for ((i = 2500; i <= 20000; i += 2500)) ;
+for ((i = $START_ITER; i <= $END_ITER; i += 2500)) ;
 do
   iter=$(printf "%07d" $i)
   echo EVALUATING $iter ...
@@ -59,7 +61,7 @@ do
     --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
     --tasks ${METRIC_NAME} \
     --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
-    --batch_size 1 \
+    --batch_size auto \
     --num_fewshot $NUM_FEWSHOT \
     --log_samples
   fi
