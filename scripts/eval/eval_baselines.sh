@@ -7,39 +7,40 @@
 #SBATCH --gres=gpu:8             # number of gpus per node
 #SBATCH --partition=main
 #SBATCH --output=/lustrefs/users/runner/slurm/eval_baseline.out
-#SBATCH --error=/lustrefs/users/runner/slurm/eval_baseline.err
+#SBATCH --error=c
 
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
 export HF_ALLOW_CODE_EVAL="1"
 
 declare -A metrics
-metrics["mmlu_arabic"]=0
-metrics["arc_challenge"]=25
+# metrics["mmlu_arabic"]=0
+# metrics["arc_challenge"]=25
 metrics["gsm8k"]=5
-metrics["bbh"]=3
-metrics["leaderboard_gpqa_diamond"]=0
-metrics["hellaswag"]=10
-metrics["humaneval"]=0
-metrics["mbpp"]=3
-metrics["mmlu_pro"]=5
-metrics["mmlu"]=5
-metrics["truthfulqa"]=0
-metrics["winogrande"]=5
-metrics["ifeval"]=0
-metrics["piqa"]=0
+# metrics["bbh"]=3
+# metrics["leaderboard_gpqa_diamond"]=0
+# metrics["hellaswag"]=10
+# metrics["humaneval"]=0
+# metrics["mbpp"]=3
+# metrics["mmlu_pro"]=5
+# metrics["mmlu"]=5
+# metrics["truthfulqa"]=0
+# metrics["winogrande"]=5
+# metrics["ifeval"]=0
+# metrics["piqa"]=0
 # metrics["social_iqa"]=0
 # metrics["race"]=0
 # metrics["openbookqa"]=0
-metrics["gsm8k_cot"]=8
-metrics["minerva_math"]=4
+# metrics["gsm8k_cot"]=8
+# metrics["minerva_math"]=4
+# metrics["humaneval_64"]=0
 baseline_models=(
-  # "/lustrefs/users/runner/checkpoints/huggingface/k2-65b"
+  "/lustrefs/users/runner/checkpoints/huggingface/k2-65b"
   # "/lustrefs/users/runner/checkpoints/huggingface/llama3-70b"
   # "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-32b"
   # "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b"
   # "/lustrefs/users/runner/checkpoints/huggingface/falcon-h1-34b"
-  "/lustrefs/users/runner/checkpoints/huggingface/llama3.1-70b"
+  # "/lustrefs/users/runner/checkpoints/huggingface/llama3.1-70b"
   # "/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed/iter_1249000"
   # "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0135000"
 )

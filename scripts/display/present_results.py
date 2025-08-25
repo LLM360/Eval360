@@ -4,6 +4,7 @@ import glob
 import json
 import statistics
 from tabulate import tabulate
+from math_verify import parse, verify
 
 # CKPT_DIR = '/lustrefs/users/runner/checkpoints/huggingface'
 # CKPT_DIR = '/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed'
@@ -22,6 +23,7 @@ METRICS = {
     "mmlu_pro": ["english", "mc"],
     "mbpp": ["code", "gen"],
     "humaneval": ["code", "gen"],
+    # "humaneval_64": ["code", "gen"],
     "ifeval": ["english"],
     "piqa": ["english", "mc"]
 }
@@ -35,6 +37,11 @@ BASELINE_MODELS = {
     "/lustrefs/users/runner/checkpoints/huggingface/llama3.1-70b": "llama3.1-70b",
     # "/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed/iter_1249000": "pretrained",
     "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0135000": "midtrain-stage1"
+}
+MATH_VERIFY_TASKS = {
+    "gsm8k_cot_8shots": "gsm8k_cot",
+    "gsm8k_5shots": "gsm8k",
+    # "minerva_math_4shots": "minerva_math"
 }
 
 def calc_avg_format(value_list):
@@ -66,32 +73,63 @@ def get_result(results, metric):
         return results[metric]['pass_at_1,none']
     elif metric in ['humaneval']:
         return results[metric]['pass@1,create_test']
+    elif metric in ['humaneval_64']:
+        return results[metric]['pass@64,create_test']
     elif metric in ['ifeval']:
         return statistics.mean([results[metric]['prompt_level_strict_acc,none'], results[metric]['inst_level_strict_acc,none']])
-    elif metric in ['gsm8k_cot']:
-        return results[metric]['exact_match,flexible-extract']
+    elif metric in ['gsm8k_cot', 'gsm8k']:
+        return results[metric]['math_verify,none']
     elif metric in ['minerva_math']:
         return results[metric]['exact_match,none']
-    else:
-        assert metric == 'gsm8k'
-        return results[metric]['exact_match,flexible-extract']
 
 
 def read_result(models):
     cache, rows, count = [], [], 0
     for model_path in models:
         model_name = BASELINE_MODELS.get(model_path, model_path.split("/")[-1])
-        # model_name = model_path.split('/')[-1]
         results, english_sum, math_sum, code_sum, gen_sum, mc_sum, category_avg = {}, [], [], [], [], [], []
         category_sums = [gen_sum, mc_sum, english_sum, math_sum, code_sum]
 
         for result_file in glob.glob(
                 f'{model_path}/eval_results/*/*/results_*.json'):
-            if 'gsm8k_0shots' in result_file:
-                continue
             for key, value in json.load(open(result_file))['results'].items():
                 if key in METRICS:
-                    results[key] = value
+                    if key in results:
+                        results[key] = {**results[key], **value}
+                    else:
+                        results[key] = value
+        # for task_path, task_name in MATH_VERIFY_TASKS.items():
+        #     samples_path = f"{model_path}/eval_results/{task_path}/*/samples_*.jsonl"
+        #     correct_list = []
+        #     for samples_file in glob.glob(samples_path):
+        #         total_count, correct_count = 0, 0
+        #         with open(samples_file, "r") as f:
+        #             for line in f:
+        #                 data = json.loads(line)
+        #                 if task_name in ["gsm8k_cot", "gsm8k"] and data["filter"] == "flexible-extract":
+        #                     if model_name in BASELINE_MODELS.values() or int(model_name.split("_")[-1]) < 25000:
+        #                         # print(model_name)
+        #                         total_count += 1
+        #                         gold = parse(data["target"])
+        #                         answer = parse(data["resps"][0][0])
+        #                         if verify(gold, answer):
+        #                             correct_count += 1
+        #                 # if task_name == "minerva_math":
+        #                 #     total_count += 1
+        #                 #     gold = parse(data["target"])
+        #                 #     answer = parse(data["resps"][0][0])
+        #                 #     if verify(gold, answer, timeout_seconds=20):
+        #                 #         correct_count += 1
+        #             if total_count > 0:
+        #                 correct_list.append(correct_count / total_count)
+        #     if model_name in BASELINE_MODELS.values() or int(model_name.split("_")[-1]) < 25000:
+        #         d = {'math_verify,none': statistics.mean(correct_list) if len(correct_list) > 0 else 0}
+        #         results[task_name] = d
+        #         print(model_path, task_path)
+        #         target_results_dir = glob.glob(f'{model_path}/eval_results/{task_path}/*')[0]
+        #         # print(target_results_dir)
+        #         with open(f"{target_results_dir}/results_math_verify.json", "w") as f:
+        #             json.dump({"results": {task_name: d}}, f)
 
         outputs = {metric: get_result(results, metric=metric) * 100 for metric in METRICS}
         for key, output in outputs.items():
@@ -113,7 +151,6 @@ def read_result(models):
             if "checkpoint" in model_name:
                 model_name = model_name.replace("checkpoint", "iter")
                 count += 1
-                step = int(model_name.split("_")[-1])
                 if count == 4:
                     avg = calc_avg_format(cache)
                     rows.append([model_name, avg] + category_avg + list(outputs.values()))

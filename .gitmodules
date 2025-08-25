@@ -4,3 +4,9 @@
 [submodule "lm-evaluation-harness"]
 	path = lm-evaluation-harness
 	url = https://github.com/EleutherAI/lm-evaluation-harness.git
+[submodule "Math-Verify"]
+	path = Math-Verify
+	url = https://github.com/huggingface/Math-Verify.git
+[submodule "evalplus"]
+	path = evalplus
+	url = https://github.com/evalplus/evalplus.git

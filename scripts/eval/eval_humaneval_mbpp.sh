@@ -33,6 +33,22 @@ do
     sleep 60
   done
   
+  METRIC_NAME="humaneval_64"
+  NUM_FEWSHOT=0
+  if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
+
+  then
+    echo "eval results for ${iter} exist. Skipping..."
+  else
+    lm_eval --model vllm \
+      --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
+      --tasks ${METRIC_NAME} \
+      --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
+      --batch_size auto \
+      --num_fewshot $NUM_FEWSHOT \
+      --log_samples \
+      --confirm_run_unsafe_code
+  fi
   METRIC_NAME="humaneval"
   NUM_FEWSHOT=0
   if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
