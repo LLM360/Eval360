@@ -85,8 +85,6 @@ done
 # __doc_worker_ray_end__
 
 # __doc_script_start__
-# ray/doc/source/cluster/doc_code/simple-trainer.py
-# python -u simple-trainer.py "$SLURM_CPUS_PER_TASK"
 # srun --overlap --nodes=1 --ntasks=1 -w "$head_node" \
-MODEL_PATH="/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0122500"
-vllm serve $MODEL_PATH --tensor-parallel-size 8 --pipeline_parallel_size 2 --distributed-executor-backend ray
+MODEL_PATH="/lustrefs/users/runner/checkpoints/huggingface/deepseek-v3-base-bf16-new"
+vllm serve $MODEL_PATH --tensor-parallel-size 8 --pipeline_parallel_size $SLURM_NNODES --distributed-executor-backend ray

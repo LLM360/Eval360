@@ -16,11 +16,12 @@ export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
 MODEL_NAME=$1
 START_ITER=$2
 END_ITER=$3
+STEP_SIZE=$4
 CKPT_DIR="/lustrefs/users/runner/workspace/checkpoints"
 HF_DIR="${CKPT_DIR}/huggingface/${MODEL_NAME}/checkpoints"
 echo $HF_DIR
 
-for ((i = $START_ITER; i <= $END_ITER; i += 2500)) ;
+for ((i = $START_ITER; i <= $END_ITER; i += $STEP_SIZE)) ;
 do
   iter=$(printf "%07d" $i)
   echo EVALUATING $iter ...

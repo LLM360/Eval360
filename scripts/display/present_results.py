@@ -35,8 +35,11 @@ BASELINE_MODELS = {
     "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b": "qwen2.5-72b",
     "/lustrefs/users/runner/checkpoints/huggingface/falcon-h1-34b": "falcon-h1-34b",
     "/lustrefs/users/runner/checkpoints/huggingface/llama3.1-70b": "llama3.1-70b",
+    "/lustrefs/users/runner/checkpoints/huggingface/deepseek-v3-base-bf16-new": "deepseek-v3-bf16",
     # "/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed/iter_1249000": "pretrained",
-    "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0135000": "midtrain-stage1"
+    # "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0135000": "midtrain-stage1",
+    # "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix/checkpoints/checkpoint_0045000": "midtrain-stage2",
+    "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage3_attn128k_jais250k_tp8_bestfit/checkpoints/checkpoint_0017500": "midtrain-stage3"
 }
 MATH_VERIFY_TASKS = {
     "gsm8k_cot_8shots": "gsm8k_cot",
@@ -182,6 +185,10 @@ def main(model_name):
         model_name = "k2plus_stage2_attn64k_jais250k_tp8_bestfit"
     elif model_name == "stage2":
         model_name = "k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix"
+    elif model_name == "stage3":
+        model_name = "k2plus_stage3_attn128k_jais250k_tp8_bestfit"
+    elif model_name == "stage4":
+        model_name = "k2plus_stage4_attn512k_jais250k_tp8_bestfit"
     CKPT_DIR="/lustrefs/users/runner/workspace/checkpoints"
     CKPT_DIR=f"{CKPT_DIR}/huggingface/{model_name}/checkpoints"
     k2_plus_ckpt_dirs = []
