@@ -3,12 +3,18 @@ import fire
 import glob
 import json
 import statistics
+from typing import Dict, List, Tuple, Any
 from tabulate import tabulate
-from math_verify import parse, verify
 
-# CKPT_DIR = '/lustrefs/users/runner/checkpoints/huggingface'
-# CKPT_DIR = '/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed'
-METRICS = {
+# Configuration Constants
+# =====================
+
+# Base checkpoint directory
+BASE_CHECKPOINT_DIR = "/lustrefs/users/runner/checkpoints/huggingface"
+WORKSPACE_CHECKPOINT_DIR = "/lustrefs/users/runner/workspace/checkpoints/huggingface"
+
+# Metrics configuration mapping task names to their categories
+METRICS_CONFIG = {
     "arc_challenge": ["english", "mc"],
     "gsm8k": ["math", "gen"],
     "gsm8k_cot": ["math", "gen"],
@@ -23,185 +29,321 @@ METRICS = {
     "mmlu_pro": ["english", "mc"],
     "mbpp": ["code", "gen"],
     "humaneval": ["code", "gen"],
-    # "humaneval_64": ["code", "gen"],
+    "humaneval_64": ["code", "gen"],
     "ifeval": ["english"],
     "piqa": ["english", "mc"]
 }
-WINDOW_INTERVAL = 20000
+
+# Baseline models for comparison
 BASELINE_MODELS = {
-    "/lustrefs/users/runner/checkpoints/huggingface/k2-65b": "k2-65b",
-    "/lustrefs/users/runner/checkpoints/huggingface/llama3-70b": "llama3-70b",
-    "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-32b": "qwen2.5-32b",
-    "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b": "qwen2.5-72b",
-    "/lustrefs/users/runner/checkpoints/huggingface/falcon-h1-34b": "falcon-h1-34b",
-    "/lustrefs/users/runner/checkpoints/huggingface/llama3.1-70b": "llama3.1-70b",
-    "/lustrefs/users/runner/checkpoints/huggingface/deepseek-v3-base-bf16-new": "deepseek-v3-bf16",
-    # "/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed/iter_1249000": "pretrained",
-    # "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0135000": "midtrain-stage1",
-    # "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix/checkpoints/checkpoint_0045000": "midtrain-stage2",
-    "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage3_attn128k_jais250k_tp8_bestfit/checkpoints/checkpoint_0017500": "midtrain-stage3"
-}
-MATH_VERIFY_TASKS = {
-    "gsm8k_cot_8shots": "gsm8k_cot",
-    "gsm8k_5shots": "gsm8k",
-    # "minerva_math_4shots": "minerva_math"
+    f"{BASE_CHECKPOINT_DIR}/k2-65b": "k2-65b",
+    f"{BASE_CHECKPOINT_DIR}/llama3-70b": "llama3-70b",
+    f"{BASE_CHECKPOINT_DIR}/qwen2.5-32b": "qwen2.5-32b",
+    f"{BASE_CHECKPOINT_DIR}/qwen2.5-72b": "qwen2.5-72b",
+    f"{BASE_CHECKPOINT_DIR}/falcon-h1-34b": "falcon-h1-34b",
+    f"{BASE_CHECKPOINT_DIR}/llama3.1-70b": "llama3.1-70b",
+    f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage3_attn128k_jais250k_tp8_bestfit/checkpoints/checkpoint_0017500": "midtrain-stage3"
 }
 
-def calc_avg_format(value_list):
+# Model name aliases for easier reference
+MODEL_NAME_ALIASES = {
+    "stage1_v1": "k2plus_data.v1_attn8k_jais250k_tp8",
+    "stage1_v2": "k2plus_data.v2_attn8k_jais250k_tp8",
+    "stage1_v3": "k2plus_data.v3_attn8k_jais250k_tp8",
+    "stage1_v4": "k2plus_data.v4_attn8k_jais250k_tp8",
+    "stage1": "k2plus_stage1_attn8k_jais250k_tp8",
+    "stage2_v1": "k2plus_stage2_attn64k_jais250k_tp8_normal",
+    "stage2_v2": "k2plus_stage2_attn64k_jais250k_tp8_bestfit",
+    "stage2": "k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix",
+    "stage3": "k2plus_stage3_attn128k_jais250k_tp8_bestfit",
+    "stage4": "k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new"
+}
+
+# Constants for result processing
+WINDOW_INTERVAL = 20000
+CHECKPOINT_AVERAGE_COUNT = 4
+
+# Result extraction keys for different metrics
+RESULT_EXTRACTION_KEYS = {
+    'arc_challenge': 'acc_norm,none',
+    'hellaswag': 'acc_norm,none',
+    'leaderboard_gpqa_diamond': 'acc_norm,none',
+    'piqa': 'acc_norm,none',
+    'mmlu': 'acc,none',
+    'truthfulqa_mc2': 'acc,none',
+    'winogrande': 'acc,none',
+    'mmlu_arabic': 'acc,none',
+    'mmlu_pro': 'exact_match,custom-extract',
+    'bbh': 'exact_match,get-answer',
+    'mbpp': 'pass_at_1,none',
+    'humaneval': 'pass@1,create_test',
+    'humaneval_64': 'pass@64,create_test',
+    'gsm8k_cot': 'math_verify,none',
+    'gsm8k': 'math_verify,none',
+    'minerva_math': 'exact_match,none'
+}
+
+# Metric name aliases for better display
+METRIC_DISPLAY_ALIASES = {
+    'arc_challenge': 'ARC-C',
+    'hellaswag': 'HellaSwag',
+    'leaderboard_gpqa_diamond': 'GPQA-Diamond',
+    'piqa': 'PIQA',
+    'mmlu': 'MMLU',
+    'truthfulqa_mc2': 'TruthfulQA',
+    'winogrande': 'WinoGrande',
+    'mmlu_arabic': 'MMLU-Arabic',
+    'mmlu_pro': 'MMLU-Pro',
+    'bbh': 'BBH',
+    'mbpp': 'MBPP',
+    'humaneval': 'HumanEval',
+    'humaneval_64': 'HumanEval-64',
+    'gsm8k_cot': 'GSM8K-CoT',
+    'gsm8k': 'GSM8K',
+    'minerva_math': 'Minerva',
+    'ifeval': 'IFEval'
+}
+
+# Utility Functions
+# =================
+
+def calculate_average_format(value_list: List[float]) -> str:
+    """Calculate and format the average of a list of values.
+    
+    Args:
+        value_list: List of numeric values
+        
+    Returns:
+        Formatted average as string with 2 decimal places
+    """
     if 0 in value_list:
         return '0.00'
     return f'{statistics.mean(value_list):.2f}'
 
 
-def calc_mean(num_list):
-    if not num_list:
-        return 0.00
-    if 0 in num_list:
+def calculate_mean(num_list: List[float]) -> float:
+    """Calculate the mean of a list of numbers.
+    
+    Args:
+        num_list: List of numeric values
+        
+    Returns:
+        Mean value, or 0.00 if list is empty or contains 0
+    """
+    if not num_list or 0 in num_list:
         return 0.00
     return statistics.mean(num_list)
 
 
-def get_result(results, metric):
+def extract_result_value(results: Dict[str, Any], metric: str) -> float:
+    """Extract the appropriate result value for a given metric.
+    
+    Args:
+        results: Dictionary containing metric results
+        metric: Name of the metric to extract
+        
+    Returns:
+        Extracted result value as float
+    """
     if metric not in results:
-        return 0
-    if metric in ['arc_challenge', 'hellaswag', 'leaderboard_gpqa_diamond', 'piqa']:
-        return results[metric]['acc_norm,none']
-    elif metric in ['mmlu', 'truthfulqa_mc2', 'winogrande', 'mmlu_arabic']:
-        return results[metric]['acc,none']
-    elif metric in ['mmlu_pro']:
-        return results[metric]['exact_match,custom-extract']
-    elif metric in ['bbh']:
-        return results[metric]['exact_match,get-answer']
-    elif metric in ['mbpp']:
-        return results[metric]['pass_at_1,none']
-    elif metric in ['humaneval']:
-        return results[metric]['pass@1,create_test']
-    elif metric in ['humaneval_64']:
-        return results[metric]['pass@64,create_test']
-    elif metric in ['ifeval']:
-        return statistics.mean([results[metric]['prompt_level_strict_acc,none'], results[metric]['inst_level_strict_acc,none']])
-    elif metric in ['gsm8k_cot', 'gsm8k']:
-        return results[metric]['math_verify,none']
-    elif metric in ['minerva_math']:
-        return results[metric]['exact_match,none']
+        return 0.0
+    
+    # Handle special case for ifeval metric
+    if metric == 'ifeval':
+        return statistics.mean([
+            results[metric]['prompt_level_strict_acc,none'], 
+            results[metric]['inst_level_strict_acc,none']
+        ])
+    
+    # Use the predefined extraction key
+    extraction_key = RESULT_EXTRACTION_KEYS.get(metric)
+    if extraction_key and extraction_key in results[metric]:
+        return results[metric][extraction_key]
+    
+    return 0.0
 
 
-def read_result(models):
-    cache, rows, count = [], [], 0
-    for model_path in models:
-        model_name = BASELINE_MODELS.get(model_path, model_path.split("/")[-1])
-        results, english_sum, math_sum, code_sum, gen_sum, mc_sum, category_avg = {}, [], [], [], [], [], []
-        category_sums = [gen_sum, mc_sum, english_sum, math_sum, code_sum]
-
-        for result_file in glob.glob(
-                f'{model_path}/eval_results/*/*/results_*.json'):
-            for key, value in json.load(open(result_file))['results'].items():
-                if key in METRICS:
+def load_model_results(model_path: str) -> Dict[str, Any]:
+    """Load evaluation results for a single model.
+    
+    Args:
+        model_path: Path to the model directory
+        
+    Returns:
+        Dictionary containing all metric results for the model
+    """
+    results = {}
+    
+    # Find all result files for this model
+    result_files = glob.glob(f'{model_path}/eval_results/*/*/results_*.json')
+    
+    for result_file in result_files:
+        try:
+            with open(result_file, 'r') as f:
+                data = json.load(f)
+                
+            for key, value in data['results'].items():
+                if key in METRICS_CONFIG:
                     if key in results:
                         results[key] = {**results[key], **value}
                     else:
                         results[key] = value
-        # for task_path, task_name in MATH_VERIFY_TASKS.items():
-        #     samples_path = f"{model_path}/eval_results/{task_path}/*/samples_*.jsonl"
-        #     correct_list = []
-        #     for samples_file in glob.glob(samples_path):
-        #         total_count, correct_count = 0, 0
-        #         with open(samples_file, "r") as f:
-        #             for line in f:
-        #                 data = json.loads(line)
-        #                 if task_name in ["gsm8k_cot", "gsm8k"] and data["filter"] == "flexible-extract":
-        #                     if model_name in BASELINE_MODELS.values() or int(model_name.split("_")[-1]) < 25000:
-        #                         # print(model_name)
-        #                         total_count += 1
-        #                         gold = parse(data["target"])
-        #                         answer = parse(data["resps"][0][0])
-        #                         if verify(gold, answer):
-        #                             correct_count += 1
-        #                 # if task_name == "minerva_math":
-        #                 #     total_count += 1
-        #                 #     gold = parse(data["target"])
-        #                 #     answer = parse(data["resps"][0][0])
-        #                 #     if verify(gold, answer, timeout_seconds=20):
-        #                 #         correct_count += 1
-        #             if total_count > 0:
-        #                 correct_list.append(correct_count / total_count)
-        #     if model_name in BASELINE_MODELS.values() or int(model_name.split("_")[-1]) < 25000:
-        #         d = {'math_verify,none': statistics.mean(correct_list) if len(correct_list) > 0 else 0}
-        #         results[task_name] = d
-        #         print(model_path, task_path)
-        #         target_results_dir = glob.glob(f'{model_path}/eval_results/{task_path}/*')[0]
-        #         # print(target_results_dir)
-        #         with open(f"{target_results_dir}/results_math_verify.json", "w") as f:
-        #             json.dump({"results": {task_name: d}}, f)
+        except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
+            print(f"Warning: Could not load results from {result_file}: {e}")
+            continue
+    
+    return results
 
-        outputs = {metric: get_result(results, metric=metric) * 100 for metric in METRICS}
-        for key, output in outputs.items():
-            if "english" in METRICS[key]:
-                english_sum.append(output)
-            if "math" in METRICS[key]:
-                math_sum.append(output)
-            if "code" in METRICS[key]:
-                code_sum.append(output)
-            if "gen" in METRICS[key]:
-                gen_sum.append(output)
-            if "mc" in METRICS[key]:
-                mc_sum.append(output)
-        # print(model_name, outputs, cache)
-        cache.extend(outputs.values())
-        for x in category_sums:
-            category_avg.append(calc_mean(x))
-        if sum(outputs.values()) != 0:
-            if "checkpoint" in model_name:
-                model_name = model_name.replace("checkpoint", "iter")
-                count += 1
-                if count == 4:
-                    avg = calc_avg_format(cache)
-                    rows.append([model_name, avg] + category_avg + list(outputs.values()))
-                    cache = []
-                    count = 0
-                else:
-                    rows.append([model_name, "x"] + category_avg + list(outputs.values()))
+
+def calculate_category_averages(outputs: Dict[str, float]) -> List[float]:
+    """Calculate category averages for different types of tasks.
+    
+    Args:
+        outputs: Dictionary mapping metric names to their scores
+        
+    Returns:
+        List of averages in order: [gen_avg, mc_avg, english_avg, math_avg, code_avg]
+    """
+    category_sums = {
+        'gen': [],
+        'mc': [],
+        'english': [],
+        'math': [],
+        'code': []
+    }
+    
+    for metric, score in outputs.items():
+        categories = METRICS_CONFIG.get(metric, [])
+        for category in categories:
+            if category in category_sums:
+                category_sums[category].append(score)
+    
+    # Return averages in the expected order
+    return [
+        calculate_mean(category_sums['gen']),
+        calculate_mean(category_sums['mc']),
+        calculate_mean(category_sums['english']),
+        calculate_mean(category_sums['math']),
+        calculate_mean(category_sums['code'])
+    ]
+
+
+# Main Processing Functions
+# =========================
+
+def process_single_model(model_path: str, cache: List[float], count: int) -> Tuple[List, List[float], int]:
+    """Process results for a single model.
+    
+    Args:
+        model_path: Path to the model directory
+        cache: List of cached values for averaging
+        count: Current count for checkpoint averaging
+        
+    Returns:
+        Tuple of (row_data, updated_cache, updated_count)
+    """
+    model_name = BASELINE_MODELS.get(model_path, model_path.split("/")[-1])
+    
+    # Load results for this model
+    results = load_model_results(model_path)
+    
+    # Extract outputs for all metrics
+    outputs = {
+        metric: extract_result_value(results, metric) * 100 
+        for metric in METRICS_CONFIG
+    }
+    
+    # Calculate category averages
+    category_avg = calculate_category_averages(outputs)
+    
+    # Update cache with current outputs
+    cache.extend(outputs.values())
+    
+    # Handle checkpoint-specific logic
+    if sum(outputs.values()) != 0:
+        if "checkpoint" in model_name:
+            model_name = model_name.replace("checkpoint", "iter")
+            count += 1
+            
+            if count == CHECKPOINT_AVERAGE_COUNT:
+                avg = calculate_average_format(cache)
+                row = [model_name, avg] + category_avg + list(outputs.values())
+                return [row], [], 0
             else:
-                avg = calc_avg_format(cache)
-                rows.append([model_name, avg] + category_avg + list(outputs.values()))
-                cache = []
+                row = [model_name, "x"] + category_avg + list(outputs.values())
+                return [row], cache, count
+        else:
+            avg = calculate_average_format(cache)
+            row = [model_name, avg] + category_avg + list(outputs.values())
+            return [row], [], count
+    
+    return [], cache, count
+
+
+def process_model_results(model_paths: List[str]) -> List[List[Any]]:
+    """Process evaluation results for multiple models.
+    
+    Args:
+        model_paths: List of model directory paths
+        
+    Returns:
+        List of rows containing processed results
+    """
+    rows = []
+    cache = []
+    count = 0
+    
+    for model_path in model_paths:
+        model_rows, cache, count = process_single_model(model_path, cache, count)
+        rows.extend(model_rows)
+    
     return rows
 
 
-def main(model_name):
-    if model_name == "stage1_v1":
-        model_name = "k2plus_data.v1_attn8k_jais250k_tp8"
-    elif model_name == "stage1_v2":
-        model_name = "k2plus_data.v2_attn8k_jais250k_tp8"
-    elif model_name == "stage1_v3":
-        model_name = "k2plus_data.v3_attn8k_jais250k_tp8"
-    elif model_name == "stage1_v4":
-        model_name = "k2plus_data.v4_attn8k_jais250k_tp8"
-    elif model_name == "stage1":
-        model_name = "k2plus_stage1_attn8k_jais250k_tp8"
-    elif model_name == "stage2_v1":
-        model_name = "k2plus_stage2_attn64k_jais250k_tp8_normal"
-    elif model_name == "stage2_v2":
-        model_name = "k2plus_stage2_attn64k_jais250k_tp8_bestfit"
-    elif model_name == "stage2":
-        model_name = "k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix"
-    elif model_name == "stage3":
-        model_name = "k2plus_stage3_attn128k_jais250k_tp8_bestfit"
-    elif model_name == "stage4":
-        model_name = "k2plus_stage4_attn512k_jais250k_tp8_bestfit"
-    CKPT_DIR="/lustrefs/users/runner/workspace/checkpoints"
-    CKPT_DIR=f"{CKPT_DIR}/huggingface/{model_name}/checkpoints"
-    k2_plus_ckpt_dirs = []
-    for model_name in os.listdir(CKPT_DIR):
-        if "checkpoint" in model_name:
-            k2_plus_ckpt_dirs.append(os.path.join(CKPT_DIR, model_name))
-    k2_plus_ckpt_dirs = sorted(k2_plus_ckpt_dirs)
-    baseline_rows = read_result(BASELINE_MODELS)
-    # sort by avg, desc
-    public_baseline_rows = baseline_rows[:-1]
-    public_baseline_rows.sort(key=lambda x: x[1], reverse=True)
-    k2_plus_rows = read_result(k2_plus_ckpt_dirs)
-    headers = [
+# Main Functions
+# ==============
+
+def resolve_model_name(alias: str) -> str:
+    """Resolve model name alias to full model name.
+    
+    Args:
+        alias: Model name alias
+        
+    Returns:
+        Full model name
+    """
+    return MODEL_NAME_ALIASES.get(alias, alias)
+
+
+def get_checkpoint_directories(model_name: str) -> List[str]:
+    """Get sorted list of checkpoint directories for a model.
+    
+    Args:
+        model_name: Name of the model
+        
+    Returns:
+        List of checkpoint directory paths
+    """
+    checkpoint_dir = f"{WORKSPACE_CHECKPOINT_DIR}/{model_name}/checkpoints"
+    
+    if not os.path.exists(checkpoint_dir):
+        print(f"Warning: Checkpoint directory not found: {checkpoint_dir}")
+        return []
+    
+    checkpoint_dirs = []
+    for item in os.listdir(checkpoint_dir):
+        if "checkpoint" in item:
+            checkpoint_dirs.append(os.path.join(checkpoint_dir, item))
+    
+    return sorted(checkpoint_dirs)
+
+def generate_table_headers() -> List[str]:
+    """Generate table headers for the results display.
+    
+    Returns:
+        List of header strings
+    """
+    base_headers = [
         "model",
         "avg",
         "gen_avg",
@@ -209,9 +351,78 @@ def main(model_name):
         "english_avg", 
         "math_avg",
         "code_avg"
-    ] + [metric if metric != "leaderboard_gpqa_diamond" else "gpqa_diamond" for metric in METRICS]
-    print(tabulate(public_baseline_rows + baseline_rows[-1:] + sorted(k2_plus_rows, reverse=True), headers=headers, tablefmt="tsv", numalign="right", floatfmt=".2f", maxcolwidths=20))
+    ]
+    
+    metric_headers = [
+        METRIC_DISPLAY_ALIASES.get(metric, metric) 
+        for metric in METRICS_CONFIG
+    ]
+    
+    return base_headers + metric_headers
+
+def display_results(baseline_rows: List[List[Any]], k2_plus_rows: List[List[Any]]) -> None:
+    """Display the results in a formatted table.
+    
+    Args:
+        baseline_rows: Rows for baseline models
+        k2_plus_rows: Rows for k2+ models
+    """
+    # Sort baseline rows (excluding the last one which is midtrain-stage3)
+    public_baseline_rows = baseline_rows[:-1]
+    public_baseline_rows.sort(key=lambda x: float(x[1]) if x[1] != 'x' else 0, reverse=True)
+    
+    # Sort k2+ rows by average score
+    sorted_k2_plus_rows = sorted(
+        k2_plus_rows,
+        reverse=True
+    )
+    
+    # Combine all rows
+    all_rows = public_baseline_rows + baseline_rows[-1:] + sorted_k2_plus_rows
+    
+    # Generate headers
+    headers = generate_table_headers()
+    
+    # Display table
+    print(tabulate(
+        all_rows, 
+        headers=headers, 
+        tablefmt="tsv", 
+        numalign="right", 
+        floatfmt=".2f", 
+        maxcolwidths=20
+    ))
+
+def main(model_name: str) -> None:
+    """Main function to process and display model evaluation results.
+    
+    Args:
+        model_name: Name or alias of the model to analyze
+    """
+    # Resolve model name alias
+    full_model_name = resolve_model_name(model_name)
+    
+    # Get checkpoint directories
+    checkpoint_dirs = get_checkpoint_directories(full_model_name)
+    
+    # Process baseline models
+    baseline_rows = process_model_results(list(BASELINE_MODELS.keys()))
+    
+    # Process k2+ model checkpoints
+    k2_plus_rows = process_model_results(checkpoint_dirs)
+    
+    # Display results
+    display_results(baseline_rows, k2_plus_rows)
     
 
+# Entry Point
+# ===========
+
 if __name__ == '__main__':
-    fire.Fire(main)
+    try:
+        fire.Fire(main)
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.")
+    except Exception as e:
+        print(f"Error: {e}")
+        raise
