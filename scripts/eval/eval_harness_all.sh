@@ -3,7 +3,7 @@
 # to run all eval tasks, we need 8 nodes in total
 # MODEL_NAME="k2plus_stage2_attn64k_jais250k_tp8_normal"
 # MODEL_NAME="k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix"
-MODEL_NAME="k2plus_stage4_attn512k_jais250k_tp8_bestfit"
+MODEL_NAME="k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new"
 START_ITER=500
 END_ITER=9500
 STEP_SIZE=500

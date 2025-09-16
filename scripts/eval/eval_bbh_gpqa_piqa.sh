@@ -20,7 +20,6 @@ MODEL_NAME=$1
 START_ITER=$2
 END_ITER=$3
 STEP_SIZE=$4
-CKPT_DIR="/lustrefs/users/runner/workspace/checkpoints"
 HF_DIR="${CKPT_DIR}/huggingface/${MODEL_NAME}/checkpoints"
 echo $HF_DIR
 
@@ -36,50 +35,50 @@ do
   done
 
   echo "${CKPT_DIR}/done.txt exists. Continuing..."
-  METRIC_NAME="bbh"
-  NUM_FEWSHOT=3
-  if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
-
-  then
-    echo "eval results for ${iter} exist. Skipping..."
-  else
-
-    lm_eval --model vllm \
-      --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7,trust_remote_code=True \
-      --tasks ${METRIC_NAME} \
-      --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
-      --batch_size auto \
-      --log_samples \
-      --trust_remote_code
-  fi
-  METRIC_NAME="leaderboard_gpqa_diamond"
-  if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME} ]]
-
-  then
-    echo "eval results for ${iter} exist. Skipping..."
-  else
-
-    lm_eval --model vllm \
-      --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7 \
-      --tasks ${METRIC_NAME} \
-      --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME} \
-      --batch_size 1 \
-      --log_samples
-  fi
-  METRIC_NAME="piqa"
-  NUM_FEWSHOT=0
-  if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
-
-  then
-    echo "eval results for ${iter} exist. Skipping..."
-  else
-
-    lm_eval --model vllm \
-      --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7 \
-      --tasks ${METRIC_NAME} \
-      --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
-      --batch_size 1 \
-      --log_samples
-  fi
+  # Define metrics array: each element contains "metric_name:fewshot_count:batch_size:trust_remote_code"
+  METRICS=(
+    "bbh:3:auto:true"
+    # "leaderboard_gpqa_diamond:0:1:false"
+    "gpqa_diamond_cot_zeroshot:0:auto:false"
+    "piqa:0:1:false"
+  )
+  
+  # Iterate through each metric configuration
+  for metric_config in "${METRICS[@]}"; do
+    # Split the configuration into components
+    IFS=':' read -r METRIC_NAME NUM_FEWSHOT BATCH_SIZE TRUST_REMOTE <<< "$metric_config"
+    
+    echo "Evaluating ${METRIC_NAME} with ${NUM_FEWSHOT} fewshot..."
+    
+    if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]; then
+      echo "eval results for ${iter} (${METRIC_NAME}) exist. Skipping..."
+    else
+      # Build model args based on trust_remote_code setting
+      if [[ "$TRUST_REMOTE" == "true" ]]; then
+        MODEL_ARGS="pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7,trust_remote_code=True"
+        TRUST_FLAG="--trust_remote_code"
+      else
+        MODEL_ARGS="pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7,max_length=4096"
+        TRUST_FLAG=""
+      fi
+      
+      # Add generation kwargs for gpqa_diamond
+      if [[ "$METRIC_NAME" == *"gpqa_diamond"* ]]; then
+        GEN_KWARGS="--gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=2048"
+      else
+        GEN_KWARGS=""
+      fi
+      
+      lm_eval --model vllm \
+        --model_args ${MODEL_ARGS} \
+        --tasks ${METRIC_NAME} \
+        --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
+        --batch_size $BATCH_SIZE \
+        --num_fewshot $NUM_FEWSHOT \
+        --log_samples \
+        $TRUST_FLAG \
+        $GEN_KWARGS
+    fi
+  done
 
 done

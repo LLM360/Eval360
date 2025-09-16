@@ -13,7 +13,7 @@
 TP=8
 TOKENIZER="/lustrefs/users/xuezhe.ma/projects/data/tokenizers/jais250k"
 CKPT_DIR="/lustrefs/users/runner/workspace/checkpoints"
-MODEL_NAME="k2plus_stage4_attn512k_jais250k_tp8_bestfit"
+MODEL_NAME="k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new"
 HF_CONFIG="/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed/iter_1249000"
 
 export PATH="/lustrefs/users/runner/anaconda3/envs/xllm2.7.1/bin:/lustrefs/users/runner/anaconda3/bin:$PATH"

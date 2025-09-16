@@ -34,37 +34,30 @@ do
 
   echo "${CKPT_DIR}/done.txt exists. Continuing..."
 
-  METRIC_NAME="gsm8k_cot"
-  NUM_FEWSHOT=8
-  if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
-
-  then
-    echo "eval results for ${iter} exist. Skipping..."
-  else
-
-    lm_eval --model vllm \
-    --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
-    --tasks ${METRIC_NAME} \
-    --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
-    --batch_size auto \
-    --num_fewshot $NUM_FEWSHOT \
-    --log_samples
-  fi
-  METRIC_NAME="minerva_math"
-  NUM_FEWSHOT=4
-  if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
-
-  then
-    echo "eval results for ${iter} exist. Skipping..."
-  else
-
-    lm_eval --model vllm \
-    --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
-    --tasks ${METRIC_NAME} \
-    --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
-    --batch_size auto \
-    --num_fewshot $NUM_FEWSHOT \
-    --log_samples
-  fi
+  # Define metrics array: each element contains "metric_name:fewshot_count"
+  METRICS=(
+    "gsm8k_cot:8"
+    "minerva_math:4"
+  )
+  
+  # Iterate through each metric configuration
+  for metric_config in "${METRICS[@]}"; do
+    # Split the configuration into metric name and fewshot count
+    IFS=':' read -r METRIC_NAME NUM_FEWSHOT <<< "$metric_config"
+    
+    echo "Evaluating ${METRIC_NAME} with ${NUM_FEWSHOT} fewshot..."
+    
+    if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]; then
+      echo "eval results for ${iter} (${METRIC_NAME}) exist. Skipping..."
+    else
+      lm_eval --model vllm \
+        --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
+        --tasks ${METRIC_NAME} \
+        --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
+        --batch_size auto \
+        --num_fewshot $NUM_FEWSHOT \
+        --log_samples
+    fi
+  done
 
 done
