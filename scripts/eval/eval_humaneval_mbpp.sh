@@ -48,9 +48,9 @@ do
     
     echo "Evaluating ${METRIC_NAME} with ${NUM_FEWSHOT} fewshot..."
     
-    if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]; then
-      echo "eval results for ${iter} (${METRIC_NAME}) exist. Skipping..."
-    else
+    # if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]; then
+    #   echo "eval results for ${iter} (${METRIC_NAME}) exist. Skipping..."
+    # else
       lm_eval --model vllm \
         --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
         --tasks ${METRIC_NAME} \
@@ -59,6 +59,6 @@ do
         --num_fewshot $NUM_FEWSHOT \
         --log_samples \
         --confirm_run_unsafe_code
-    fi
+    # fi
   done
 done

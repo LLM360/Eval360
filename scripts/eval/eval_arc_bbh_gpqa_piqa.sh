@@ -6,8 +6,8 @@
 #SBATCH --mem=0                 # total memory per node (4 GB per cpu-core is default)
 #SBATCH --gres=gpu:8             # number of gpus per node
 #SBATCH --partition=main
-#SBATCH --output=/lustrefs/users/runner/slurm/eval_bbh_gpqa_piqa.out
-#SBATCH --error=/lustrefs/users/runner/slurm/eval_bbh_gpqa_piqa.err
+#SBATCH --output=/lustrefs/users/runner/slurm/eval_arc_bbh_gpqa_piqa.out
+#SBATCH --error=/lustrefs/users/runner/slurm/eval_arc_bbh_gpqa_piqa.err
 
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
@@ -37,9 +37,9 @@ do
   echo "${CKPT_DIR}/done.txt exists. Continuing..."
   # Define metrics array: each element contains "metric_name:fewshot_count:batch_size:trust_remote_code"
   METRICS=(
+    "arc_challenge:25:1:false"
     "bbh:3:auto:true"
-    # "leaderboard_gpqa_diamond:0:1:false"
-    "gpqa_diamond_cot_zeroshot:0:auto:false"
+    "leaderboard_gpqa_diamond:0:1:false"
     "piqa:0:1:false"
   )
   
@@ -50,21 +50,21 @@ do
     
     echo "Evaluating ${METRIC_NAME} with ${NUM_FEWSHOT} fewshot..."
     
-    if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]; then
-      echo "eval results for ${iter} (${METRIC_NAME}) exist. Skipping..."
-    else
+    # if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]; then
+    #   echo "eval results for ${iter} (${METRIC_NAME}) exist. Skipping..."
+    # else
       # Build model args based on trust_remote_code setting
       if [[ "$TRUST_REMOTE" == "true" ]]; then
         MODEL_ARGS="pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7,trust_remote_code=True"
         TRUST_FLAG="--trust_remote_code"
       else
-        MODEL_ARGS="pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7,max_length=4096"
+        MODEL_ARGS="pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7,max_length=5000"
         TRUST_FLAG=""
       fi
       
       # Add generation kwargs for gpqa_diamond
       if [[ "$METRIC_NAME" == *"gpqa_diamond"* ]]; then
-        GEN_KWARGS="--gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=2048"
+        GEN_KWARGS="--gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=4096"
       else
         GEN_KWARGS=""
       fi
@@ -78,7 +78,7 @@ do
         --log_samples \
         $TRUST_FLAG \
         $GEN_KWARGS
-    fi
+    # fi
   done
 
 done

@@ -6,8 +6,8 @@
 #SBATCH --mem=0                 # total memory per node (4 GB per cpu-core is default)
 #SBATCH --gres=gpu:8             # number of gpus per node
 #SBATCH --partition=main
-#SBATCH --output=/lustrefs/users/runner/slurm/eval_arc_gsm8k.out
-#SBATCH --error=/lustrefs/users/runner/slurm/eval_arc_gsm8k.err
+#SBATCH --output=/lustrefs/users/runner/slurm/eval_gsm8k_math.out
+#SBATCH --error=/lustrefs/users/runner/slurm/eval_gsm8k_math.err
 
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
@@ -34,30 +34,31 @@ do
 
   echo "${CKPT_DIR}/done.txt exists. Continuing..."
 
-  # Define metrics array: each element contains "metric_name:fewshot_count:batch_size"
+  # Define metrics array: each element contains "metric_name:fewshot_count"
   METRICS=(
-    "arc_challenge:25:1"
-    "gsm8k:5:auto"
+    # "gsm8k:5"
+    # "gsm8k_cot:8"
+    "minerva_math:4"
   )
   
   # Iterate through each metric configuration
   for metric_config in "${METRICS[@]}"; do
-    # Split the configuration into metric name, fewshot count, and batch size
-    IFS=':' read -r METRIC_NAME NUM_FEWSHOT BATCH_SIZE <<< "$metric_config"
+    # Split the configuration into metric name and fewshot count
+    IFS=':' read -r METRIC_NAME NUM_FEWSHOT <<< "$metric_config"
     
     echo "Evaluating ${METRIC_NAME} with ${NUM_FEWSHOT} fewshot..."
     
-    if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]; then
-      echo "eval results for ${iter} (${METRIC_NAME}) exist. Skipping..."
-    else
+    # if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]; then
+    #   echo "eval results for ${iter} (${METRIC_NAME}) exist. Skipping..."
+    # else
       lm_eval --model vllm \
         --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
         --tasks ${METRIC_NAME} \
         --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
-        --batch_size $BATCH_SIZE \
+        --batch_size auto \
         --num_fewshot $NUM_FEWSHOT \
         --log_samples
-    fi
+    # fi
   done
 
 done

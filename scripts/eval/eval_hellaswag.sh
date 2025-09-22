@@ -36,11 +36,11 @@ do
 
   METRIC_NAME="hellaswag"
   NUM_FEWSHOT=10
-  if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
+  # if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
 
-  then
-    echo "eval results for ${iter} exist. Skipping..."
-  else
+  # then
+  #   echo "eval results for ${iter} exist. Skipping..."
+  # else
     lm_eval --model vllm \
       --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
       --tasks ${METRIC_NAME} \
@@ -48,6 +48,6 @@ do
       --batch_size 1 \
       --num_fewshot $NUM_FEWSHOT \
       --log_samples
-  fi
+  # fi
 
 done
