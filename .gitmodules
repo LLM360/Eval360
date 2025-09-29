@@ -10,3 +10,6 @@
 [submodule "evalplus"]
 	path = evalplus
 	url = https://github.com/evalplus/evalplus.git
+[submodule "matharena"]
+	path = matharena
+	url = https://github.com/eth-sri/matharena.git

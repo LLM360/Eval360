@@ -56,7 +56,9 @@ do
             --tp $TP \
             --hf_config_name_or_path $HF_CONFIG \
             --hf_tokenizer_name_or_path $TOKENIZER \
-            --do_tp_copy_sanity_check False
+            --do_tp_copy_sanity_check False \
+            --rope_theta 1000000 \
+            --max_position_embeddings 524288
         # remove temp files
         echo "remove temp files in ${CURRENT_CKPT}"
         rm -f ${CURRENT_CKPT}/model.tp*.pt
