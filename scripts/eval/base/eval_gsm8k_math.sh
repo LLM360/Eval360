@@ -38,7 +38,9 @@ do
   METRICS=(
     # "gsm8k:5"
     # "gsm8k_cot:8"
-    "minerva_math:4"
+    # "minerva_math:4"
+    # "gsm8k_reasoning_base:0"
+    "minerva_math_reasoning_base:0"
   )
   
   # Iterate through each metric configuration
@@ -57,7 +59,8 @@ do
         --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
         --batch_size auto \
         --num_fewshot $NUM_FEWSHOT \
-        --log_samples
+        --log_samples \
+        --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768 \
     # fi
   done
 

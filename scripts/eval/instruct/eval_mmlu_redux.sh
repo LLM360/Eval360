@@ -6,8 +6,8 @@
 #SBATCH --mem=0                 # total memory per node (4 GB per cpu-core is default)
 #SBATCH --gres=gpu:8             # number of gpus per node
 #SBATCH --partition=main
-#SBATCH --output=/lustrefs/users/runner/slurm/eval_mmlu_pro.out
-#SBATCH --error=/lustrefs/users/runner/slurm/eval_mmlu_pro.err
+#SBATCH --output=/lustrefs/users/runner/slurm/eval_mmlu_redux.out
+#SBATCH --error=/lustrefs/users/runner/slurm/eval_mmlu_redux.err
 
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
@@ -35,7 +35,7 @@ do
   done
 
   echo "${CKPT_DIR}/done.txt exists. Continuing..."
-  METRIC_NAME="mmlu_pro"
+  METRIC_NAME="mmlu_redux_generative"
   NUM_FEWSHOT=0
   # if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]
 

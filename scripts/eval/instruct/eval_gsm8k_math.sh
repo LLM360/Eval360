@@ -35,9 +35,11 @@ do
 
   # Define metrics array: each element contains "metric_name:fewshot_count"
   METRICS=(
-    "gsm8k:0"
-    "gsm8k_cot:0"
-    "minerva_math:0"
+    # "gsm8k:0"
+    # "gsm8k_cot:0"
+    # "minerva_math:0"
+    "gsm8k_reasoning_instruct:0"
+    "minerva_math_reasoning_instruct:0"
   )
   
   # Iterate through each metric configuration
@@ -51,14 +53,15 @@ do
     #   echo "eval results for ${iter} (${METRIC_NAME}) exist. Skipping..."
     # else
       lm_eval --model vllm \
-        --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8,max_length=32768 \
+        --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8,max_length=40000 \
         --tasks ${METRIC_NAME} \
         --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
         --batch_size auto \
         --apply_chat_template \
+        --fewshot_as_multiturn \
         --num_fewshot $NUM_FEWSHOT \
         --log_samples \
-        --gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=31500
+        --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768
     # fi
   done
 

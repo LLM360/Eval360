@@ -1,0 +1,124 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=96        # cpu-cores per task (>1 if multi-threaded tasks)
+#SBATCH --gpus-per-task=8
+#SBATCH --mem=0                 # total memory per node (4 GB per cpu-core is default)
+#SBATCH --gres=gpu:8             # number of gpus per node
+#SBATCH --partition=main
+#SBATCH --output=/lustrefs/users/runner/slurm/eval_baseline.out
+#SBATCH --error=/lustrefs/users/runner/slurm/eval_baseline.err
+#SBATCH --exclude=azure-uk-hpc-H200-instance-145
+
+export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
+export HF_ALLOW_CODE_EVAL="1"
+export VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
+
+# Define metrics and their shot counts
+declare -A metrics
+# metrics["mmlu_arabic"]=0
+# metrics["arc_challenge"]=25
+# metrics["gsm8k"]=0
+# metrics["bbh"]=3
+# metrics["leaderboard_gpqa_diamond"]=0
+# metrics["gpqa_diamond_cot_zeroshot"]=0
+# metrics["hellaswag"]=10
+# metrics["humaneval_instruct"]=0
+# metrics["mbpp_instruct"]=0
+# metrics["mmlu_pro"]=0
+# metrics["mmlu"]=5
+# metrics["truthfulqa"]=0
+# metrics["winogrande"]=0
+# metrics["ifeval"]=0
+# metrics["piqa"]=0
+# metrics["gsm8k_cot"]=0
+# metrics["minerva_math"]=0
+# metrics["humaneval_64_instruct"]=0
+# metrics["mmlu_stem_generative"]=0
+metrics["minerva_math_reasoning_instruct"]=0
+metrics["gsm8k_reasoning_instruct"]=0
+# metrics["mmlu_generative"]=0
+
+# Model configurations
+single_node_models=(
+  "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b-instruct"
+  "/lustrefs/users/runner/checkpoints/huggingface/k2-think"
+)
+multi_node_models=(
+  # "/lustrefs/users/runner/checkpoints/huggingface/deepseek-v3-base-bf16-new"
+)
+
+# Function to check if results already exist
+check_results_exist() {
+    local model_path="$1"
+    local metric_name="$2"
+    local shots="$3"
+    
+    # if [[ -d "${model_path}/eval_results/${metric_name}_${shots}shots" ]]; then
+    #     echo "eval results for ${model_path} ${metric_name} ${shots} exist. Skipping..."
+    #     return 0
+    # else
+    #     return 1
+    # fi
+    return 1
+}
+
+# Function to run evaluation for single node models
+run_single_node_eval() {
+    local model_path="$1"
+    local metric_name="$2"
+    local shots="$3"
+    
+    echo "Running evaluation for ${model_path} on ${metric_name} (${shots} shots)"
+    
+    lm_eval --model vllm \
+        --model_args pretrained=${model_path},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
+        --tasks ${metric_name} \
+        --output_path ${model_path}/eval_results/${metric_name}_${shots}shots \
+        --batch_size auto \
+        --apply_chat_template \
+        --fewshot_as_multiturn \
+        --num_fewshot $shots \
+        --log_samples \
+        --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=30000 \
+        --confirm_run_unsafe_code \
+        --limit 10
+}
+
+# Function to run evaluation for multi node models
+run_multi_node_eval() {
+    local model_path="$1"
+    local metric_name="$2"
+    local shots="$3"
+    
+    echo "Running evaluation for ${model_path} on ${metric_name} (${shots} shots)"
+    
+    lm_eval --model local-completions \
+        --model_args model=${model_path},base_url=http://azure-uk-hpc-H200-instance-038:8000/v1/completions,num_concurrent=1,max_retries=3,tokenized_requests=False \
+        --tasks ${metric_name} \
+        --output_path ${model_path}/eval_results/${metric_name}_${shots}shots \
+        --batch_size auto \
+        --log_samples \
+        --confirm_run_unsafe_code
+}
+
+# Main execution loop
+for metric_name in ${!metrics[@]}; do
+    echo "Processing metric: ${metric_name} (${metrics[${metric_name}]} shots)"
+    
+    # Process single node models
+    for model_path in ${single_node_models[@]}; do
+        echo "Processing model: ${model_path}"
+        if ! check_results_exist "${model_path}" "${metric_name}" "${metrics[${metric_name}]}"; then
+            run_single_node_eval "${model_path}" "${metric_name}" "${metrics[${metric_name}]}"
+        fi
+    done
+    
+    # Process multi node models
+    for model_path in ${multi_node_models[@]}; do
+        echo "Processing model: ${model_path}"
+        if ! check_results_exist "${model_path}" "${metric_name}" "${metrics[${metric_name}]}"; then
+            run_multi_node_eval "${model_path}" "${metric_name}" "${metrics[${metric_name}]}"
+        fi
+    done
+done

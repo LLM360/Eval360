@@ -50,14 +50,14 @@ do
     # else
       
       lm_eval --model vllm \
-        --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8,max_length=32768  \
+        --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8,max_length=40000  \
         --tasks ${METRIC_NAME} \
         --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
         --batch_size $BATCH_SIZE \
         --num_fewshot $NUM_FEWSHOT \
         --apply_chat_template \
         --log_samples \
-        --gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=120000
+        --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768
     # fi
   done
 

@@ -83,6 +83,7 @@ run_single_node_eval() {
                 --output_path ${model_path}/eval_results/${metric_name}_${shots}shots \
                 --batch_size auto \
                 --log_samples \
+                --num_fewshot $shots \
                 --confirm_run_unsafe_code
         else
             # Standard falcon configuration
@@ -92,6 +93,7 @@ run_single_node_eval() {
                 --output_path ${model_path}/eval_results/${metric_name}_${shots}shots \
                 --batch_size auto \
                 --log_samples \
+                --num_fewshot $shots \
                 --confirm_run_unsafe_code
         fi
     # Special case for GPQA Diamond CoT Zero-shot with other models
@@ -103,6 +105,7 @@ run_single_node_eval() {
             --output_path ${model_path}/eval_results/${metric_name}_${shots}shots \
             --batch_size auto \
             --log_samples \
+            --num_fewshot $shots \
             --confirm_run_unsafe_code
     else
         # Standard configuration for other metrics
@@ -112,6 +115,7 @@ run_single_node_eval() {
             --output_path ${model_path}/eval_results/${metric_name}_${shots}shots \
             --batch_size auto \
             --log_samples \
+            --num_fewshot $shots \
             --confirm_run_unsafe_code
     fi
 }
@@ -130,6 +134,7 @@ run_multi_node_eval() {
         --output_path ${model_path}/eval_results/${metric_name}_${shots}shots \
         --batch_size auto \
         --log_samples \
+        --num_fewshot $shots \
         --confirm_run_unsafe_code
 }
 

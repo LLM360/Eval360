@@ -57,7 +57,8 @@ do
         --batch_size $BATCH_SIZE \
         --num_fewshot $NUM_FEWSHOT \
         --apply_chat_template \
-        --log_samples
+        --log_samples \
+        --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768
     # fi
   done
 

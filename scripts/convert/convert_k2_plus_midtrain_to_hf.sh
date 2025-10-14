@@ -13,7 +13,7 @@
 TP=8
 TOKENIZER="/lustrefs/users/xuezhe.ma/projects/data/tokenizers/jais250k"
 CKPT_DIR="/lustrefs/users/runner/workspace/checkpoints"
-MODEL_NAME="k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new"
+MODEL_NAME="k2plus_stage2.5_attn32k_jais250k_tp8"
 HF_CONFIG="/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed/iter_1249000"
 
 export PATH="/lustrefs/users/runner/anaconda3/envs/xllm2.7.1/bin:/lustrefs/users/runner/anaconda3/bin:$PATH"
@@ -21,7 +21,7 @@ export PATH="/lustrefs/users/runner/anaconda3/envs/xllm2.7.1/bin:/lustrefs/users
 # echo $PATH
 # which python
 
-for ((i = 500 ; i <= 9500; i += 500)) ;
+for ((i = 2500 ; i <= 10000; i += 2500)) ;
 do
     ITER=$(printf "%07d" $i)
     NEXT_ITER=$(printf "%07d" $((i+2500)))
@@ -57,8 +57,8 @@ do
             --hf_config_name_or_path $HF_CONFIG \
             --hf_tokenizer_name_or_path $TOKENIZER \
             --do_tp_copy_sanity_check False \
-            --rope_theta 1000000 \
-            --max_position_embeddings 524288
+            # --rope_theta 1000000 \
+            # --max_position_embeddings 524288
         # remove temp files
         echo "remove temp files in ${CURRENT_CKPT}"
         rm -f ${CURRENT_CKPT}/model.tp*.pt

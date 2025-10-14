@@ -8,6 +8,7 @@
 #SBATCH --partition=main
 #SBATCH --output=/lustrefs/users/runner/slurm/eval_humaneval_mbpp.out
 #SBATCH --error=/lustrefs/users/runner/slurm/eval_humaneval_mbpp.err
+#SBATCH --exclude=azure-uk-hpc-H200-instance-145
 
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
@@ -34,9 +35,9 @@ do
   
   # Define metrics array: each element contains "metric_name:fewshot_count"
   METRICS=(
-    "humaneval_instruct:0"
-    "mbpp_instruct:3"
-    "humaneval_64_instruct:0"
+    # "humaneval_instruct:0"
+    "mbpp_instruct:0"
+    # "humaneval_64_instruct:0"
   )
   
   # Iterate through each metric configuration
@@ -56,9 +57,11 @@ do
         --batch_size auto \
         --apply_chat_template \
         --num_fewshot $NUM_FEWSHOT \
-        --apply_chat_template \
+        --fewshot_as_multiturn \
         --log_samples \
-        --confirm_run_unsafe_code
+        --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768 \
+        --confirm_run_unsafe_code \
+        
     # fi
   done
 done

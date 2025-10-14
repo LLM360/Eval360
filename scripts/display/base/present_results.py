@@ -16,23 +16,24 @@ WORKSPACE_CHECKPOINT_DIR = "/lustrefs/users/runner/workspace/checkpoints/hugging
 # Metrics configuration mapping task names to their categories
 METRICS_CONFIG = {
     # "arc_challenge": ["english", "mc"],
-    "gsm8k": ["math", "gen"],
-    "gsm8k_cot": ["math", "gen"],
-    "minerva_math": ["math", "gen"],
+    # "gsm8k": ["math", "gen"],
+    # "gsm8k_cot": ["math", "gen"],
+    "minerva_math_reasoning_base": ["math", "gen"],
     # "hellaswag": ["english", "mc"],
     # "mmlu": ["english", "mc"],
     # "mmlu_arabic": ["arabic", "mc"],
-    "truthfulqa_mc2": ["english", "mc"],
+    # "truthfulqa_mc2": ["english", "mc"],
     # "winogrande": ["english", "mc"],
     # "leaderboard_gpqa_diamond": ["english", "mc"],
-    "gpqa_diamond_cot_zeroshot": ["english", "gen"],
-    "bbh": ["english", "gen"],
-    # "mmlu_pro": ["english", "mc"],
-    "mbpp": ["code", "gen"],
-    "humaneval": ["code", "gen"],
-    "humaneval_64": ["code", "gen"],
-    "ifeval": ["english"],
-    # "piqa": ["english", "mc"]
+    # "gpqa_diamond_cot_zeroshot": ["english", "gen"],
+    # "bbh": ["english", "gen"],
+    # "mmlu_pro": ["english", "gen"],
+    # "mbpp": ["code", "gen"],
+    # "humaneval": ["code", "gen"],
+    # "humaneval_64": ["code", "gen"],
+    # "ifeval": ["english"],
+    # "piqa": ["english", "mc"],
+    "gsm8k_reasoning_base": ["math", "gen"]
 }
 
 # Baseline models for comparison
@@ -44,6 +45,7 @@ BASELINE_MODELS = {
     f"{BASE_CHECKPOINT_DIR}/falcon-h1-34b": "falcon-h1-34b",
     f"{BASE_CHECKPOINT_DIR}/llama3.1-70b": "llama3.1-70b",
     f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new/checkpoints/checkpoint_0005000": "midtrain-stage4",
+    f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage2.5_attn32k_jais250k_tp8/checkpoints/checkpoint_0010000": "midtrain-stage4.5",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage3_attn128k_jais250k_tp8_bestfit/checkpoints/checkpoint_0017500": "midtrain-stage3",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix/checkpoints/checkpoint_0045000": "midtrain-stage2",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0135000": "midtrain-stage1",
@@ -60,7 +62,8 @@ MODEL_NAME_ALIASES = {
     "stage2_v2": "k2plus_stage2_attn64k_jais250k_tp8_bestfit",
     "stage2": "k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix",
     "stage3": "k2plus_stage3_attn128k_jais250k_tp8_bestfit",
-    "stage4": "k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new"
+    "stage4": "k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new",
+    "stage4.5": "k2plus_stage2.5_attn32k_jais250k_tp8"
 }
 
 # Constants for result processing
@@ -85,7 +88,9 @@ RESULT_EXTRACTION_KEYS = {
     'humaneval_64': 'pass@64,create_test',
     'gsm8k_cot': 'math_verify,none',
     'gsm8k': 'math_verify,none',
-    'minerva_math': 'math_verify,none'
+    'minerva_math': 'math_verify,none',
+    'gsm8k_reasoning_base': 'math_verify,none',
+    'minerva_math_reasoning_base': 'math_verify,none'
 }
 
 # Metric name aliases for better display
@@ -107,7 +112,9 @@ METRIC_DISPLAY_ALIASES = {
     'gsm8k_cot': 'GSM8K-CoT',
     'gsm8k': 'GSM8K',
     'minerva_math': 'Minerva-MATH',
-    'ifeval': 'IFEval'
+    'ifeval': 'IFEval',
+    'gsm8k_reasoning_base': 'GSM8K-Reasoning',
+    'minerva_math_reasoning_base': 'Minerva-MATH-Reasoning'
 }
 
 # Utility Functions

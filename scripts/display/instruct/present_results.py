@@ -16,24 +16,23 @@ WORKSPACE_CHECKPOINT_DIR = "/lustrefs/users/runner/workspace/checkpoints/hugging
 # Metrics configuration mapping task names to their categories
 METRICS_CONFIG = {
     # "arc_challenge": ["english", "mc"],
-    "gsm8k": ["math", "gen"],
-    "gsm8k_cot": ["math", "gen"],
-    "minerva_math": ["math", "gen"],
+    "gsm8k_reasoning_instruct": ["math", "gen"],
+    "minerva_math_reasoning_instruct": ["math", "gen"],
     # "hellaswag": ["english", "mc"],
     # "mmlu": ["english", "mc"],
     # "mmlu_arabic": ["arabic", "mc"],
     "truthfulqa_mc2": ["english", "mc"],
     "winogrande": ["english", "mc"],
     # "leaderboard_gpqa_diamond": ["english", "mc"],
-    "gpqa_diamond_cot_zeroshot": ["science", "gen"],
+    # "gpqa_diamond_cot_zeroshot": ["science", "gen"],
     # "bbh": ["english", "gen"],
     "mmlu_pro": ["english", "gen"],
     "mbpp_instruct": ["code", "gen"],
     "humaneval_instruct": ["code", "gen"],
     "humaneval_64_instruct": ["code", "gen"],
     "ifeval": ["english", "gen"],
-    "aime24": ["math", "gen"],
-    "aime25": ["math", "gen"],
+    # "aime24": ["math", "gen"],
+    # "aime25": ["math", "gen"],
     # "piqa": ["english", "mc"]
 }
 
@@ -45,16 +44,25 @@ BASELINE_MODELS = {
     # f"{BASE_CHECKPOINT_DIR}/qwen2.5-72b": "qwen2.5-72b",
     # f"{BASE_CHECKPOINT_DIR}/falcon-h1-34b": "falcon-h1-34b",
     # f"{BASE_CHECKPOINT_DIR}/llama3.1-70b": "llama3.1-70b",
-    f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new/checkpoints/checkpoint_0005000": "midtrain-stage4",
-    f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage3_attn128k_jais250k_tp8_bestfit/checkpoints/checkpoint_0017500": "midtrain-stage3",
+    f"{BASE_CHECKPOINT_DIR}/qwen2.5-72b-instruct": "qwen2.5-72b-instruct",
+    f"{BASE_CHECKPOINT_DIR}/k2-think": "llm360/k2-think",
+    # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new/checkpoints/checkpoint_0005000": "midtrain-stage4",
+    # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage3_attn128k_jais250k_tp8_bestfit/checkpoints/checkpoint_0017500": "midtrain-stage3",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix/checkpoints/checkpoint_0045000": "midtrain-stage2",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0135000": "midtrain-stage1",
 }
 
 # Model name aliases for easier reference
 MODEL_NAME_ALIASES = {
-    "general": ["sft/mid4_sft_instruct", "sft/mid3_sft"],
-    "reasoning": ["sft/mid4_sft_reasoning_am", "sft/mid4_sft_reasoning_ot"]
+    "general": ["sft/mid4_sft_instruct", "sft/mid3_sft", "sft/mid4_sft_instruct_cos_epoch"],
+    "reasoning": [
+        # "sft/mid4_sft_reasoning_am",
+        # "sft/mid4_sft_reasoning_ot",
+        "sft/mid4_sft_reasoning_am_cos_epoch",
+        # "sft/mid4_sft_reasoning_ot_cos_epoch",
+        "sft/mid4_sft_reasoning_oss_cos_epoch",
+        "sft/mid4.5_sft_reasoning_am_cos_epoch"
+    ]
 }
 
 # Constants for result processing
@@ -76,9 +84,8 @@ RESULT_EXTRACTION_KEYS = {
     'mbpp_instruct': 'pass_at_1,extract_code',
     'humaneval_instruct': 'pass@1,create_test',
     'humaneval_64_instruct': 'pass@64,create_test',
-    'gsm8k_cot': 'math_verify,none',
-    'gsm8k': 'math_verify,none',
-    'minerva_math': 'math_verify,none',
+    'gsm8k_reasoning_instruct': 'math_verify,none',
+    'minerva_math_reasoning_instruct': 'math_verify,none',
     'aime24': 'exact_match,none',
     'aime25': 'exact_match,none'
 }
@@ -99,9 +106,8 @@ METRIC_DISPLAY_ALIASES = {
     'mbpp_instruct': 'MBPP',
     'humaneval_instruct': 'HumanEval',
     'humaneval_64_instruct': 'HumanEval-64',
-    'gsm8k_cot': 'GSM8K-CoT',
-    'gsm8k': 'GSM8K',
-    'minerva_math': 'Minerva-MATH',
+    'gsm8k_reasoning_instruct': 'GSM8K-Reasoning',
+    'minerva_math_reasoning_instruct': 'Minerva-MATH-Reasoning',
     'ifeval': 'IFEval',
     'aime24': 'AIME24',
     'aime25': 'AIME25'
@@ -248,7 +254,7 @@ def process_single_model(model_path: str, cache: List[float], count: int) -> Tup
         Tuple of (row_data, updated_cache, updated_count)
     """
     # model_name = BASELINE_MODELS.get(model_path, model_path.split("/")[-1])
-    model_name = BASELINE_MODELS.get(model_path, "/".join(model_path.split("/")[-3:]))
+    model_name = BASELINE_MODELS.get(model_path, model_path.split("/")[-3] + "/" + model_path.split("/")[-1])
 
     # Load results for this model
     results = load_model_results(model_path)
@@ -383,25 +389,21 @@ def generate_table_headers() -> List[str]:
 
     return base_headers + metric_headers
 
-def display_results(baseline_rows: List[List[Any]], k2_plus_rows: List[List[Any]]) -> None:
+def display_results(baseline_rows: List[List[Any]], test_rows: List[List[Any]]) -> None:
     """Display the results in a formatted table.
 
     Args:
         baseline_rows: Rows for baseline models
-        k2_plus_rows: Rows for k2+ models
+    test_rows: Rows for new models to test
     """
     # Sort baseline rows (excluding the last one which is midtrain-stage3)
     public_baseline_rows = baseline_rows[:-1]
     public_baseline_rows.sort(key=lambda x: float(x[1]) if x[1] != 'x' else 0, reverse=True)
 
-    # Sort k2+ rows by average score
-    sorted_k2_plus_rows = sorted(
-        k2_plus_rows,
-        reverse=True
-    )
+    test_rows.sort()
 
     # Combine all rows
-    all_rows = public_baseline_rows + baseline_rows[-1:] + sorted_k2_plus_rows
+    all_rows = public_baseline_rows + baseline_rows[-1:] + test_rows
 
     # Generate headers
     headers = generate_table_headers()
@@ -432,10 +434,10 @@ def main(model_name: str) -> None:
     baseline_rows = process_model_results(list(BASELINE_MODELS.keys()))
 
     # Process k2+ model checkpoints
-    k2_plus_rows = process_model_results(checkpoint_dirs)
+    test_rows = process_model_results(checkpoint_dirs)
 
     # Display results
-    display_results(baseline_rows, k2_plus_rows)
+    display_results(baseline_rows, test_rows)
 
 
 # Entry Point
