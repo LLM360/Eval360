@@ -12,7 +12,6 @@
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
 export HF_ALLOW_CODE_EVAL="1"
 
-cd /lustrefs/users/runner/workspace/code/Eval360/scripts/eval
 # Define models array: each element contains "model_name endpoint_address"
 MODELS=(
     "qwen2.5-72b-instruct    azure-uk-hpc-H200-instance-329:8080"
@@ -52,7 +51,7 @@ for model_config in "${MODELS[@]}"; do
         IFS=':' read -r METRIC_NAME NUM_FEWSHOT BATCH_SIZE <<< "$metric_config"
         echo "Evaluating ${METRIC_NAME} with ${NUM_FEWSHOT} fewshot..."
 
-        # Add generation kwargs for gpqa_diamond
+        # Add generation kwargs
         if [[ "$METRIC_NAME" == *"ruler"* ]]; then
             GEN_KWARGS='--metadata {"max_seq_lengths":[4096,8192,16384,32768,65536,131072]}'
         else
