@@ -45,6 +45,7 @@ for model_config in "${MODELS[@]}"; do
     IFS=' ' read -r MODEL_NAME BASE_ADDR <<< "$model_config"
     echo "Evaluating ${MODEL_NAME} at ${BASE_ADDR}"
     BASE_URL=http://${BASE_ADDR}/v1/chat/completions
+    MODEL_CKPT=${CKPT_DIR}/${MODEL_NAME}
 
     for metric_config in "${METRICS[@]}"; do
         # Split the configuration into metric name and fewshot count
@@ -59,9 +60,9 @@ for model_config in "${MODELS[@]}"; do
         fi
 
         lm_eval --model local-chat-completions \
-            --model_args pretrained=${MODEL_NAME},base_url=${BASE_URL},num_concurrent=10,max_retries=2,timeout=3600 \
+            --model_args pretrained=${MODEL_CKPT},base_url=${BASE_URL},num_concurrent=10,max_retries=2,timeout=3600 \
             --tasks ${METRIC_NAME} \
-            --output_path ${CKPT_DIR}/${MODEL_NAME}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
+            --output_path ${MODEL_CKPT}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
             --num_fewshot $NUM_FEWSHOT \
             --batch_size $BATCH_SIZE \
             --log_samples \
