@@ -16,7 +16,7 @@ export HF_ALLOW_CODE_EVAL="1"
 MODEL_NAME="qwen2.5-72b-instruct"
 MODEL_CKPT="/lustrefs/users/runner/checkpoints/huggingface/${MODEL_NAME}"
 BASE_URL="http://azure-uk-hpc-H200-instance-374:8080/v1/completions"
-MAX_LENGTH=32768
+MAX_GEN_TOKENS=32768
 
 # Define metrics array: each element contains "metric_name:fewshot_count:batch_size:trust_remote_code"
 METRICS=(
@@ -51,7 +51,7 @@ for metric_config in "${METRICS[@]}"; do
 
     # Add generation kwargs
     if [[ "$METRIC_NAME" == *"gsm8k"* || "$METRIC_NAME" == *"minerva_math"* || "$METRIC_NAME" == *"gpqa_diamond"* ]]; then
-        GEN_KWARGS="--gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=${MAX_LENGTH}"
+        GEN_KWARGS="--gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=${MAX_GEN_TOKENS}"
     else
         GEN_KWARGS=""
     fi
@@ -61,12 +61,12 @@ for metric_config in "${METRICS[@]}"; do
         MODEL_ARGS="pretrained=${MODEL_CKPT},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7,trust_remote_code=True"
         TRUST_FLAG="--trust_remote_code"
     else
-        MODEL_ARGS="pretrained=${MODEL_CKPT},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7,max_length=5000"
+        MODEL_ARGS="pretrained=${MODEL_CKPT},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7,max_gen_toks=${MAX_GEN_TOKENS}"
         TRUST_FLAG=""
     fi
 
     lm_eval --model local-completions \
-        --model_args pretrained=${MODEL_CKPT},base_url=${BASE_URL},num_concurrent=10,max_retries=2,timeout=3600,tokenized_requests=False,max_length=${MAX_LENGTH} \
+        --model_args pretrained=${MODEL_CKPT},base_url=${BASE_URL},num_concurrent=10,max_retries=2,timeout=3600,tokenized_requests=False,max_gen_toks=${MAX_GEN_TOKENS} \
         --tasks ${METRIC_NAME} \
         --output_path ${MODEL_CKPT}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
         --batch_size $BATCH_SIZE \

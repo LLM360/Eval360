@@ -11,6 +11,7 @@
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
 export HF_ALLOW_CODE_EVAL="1"
+MAX_GEN_TOKENS=32768
 
 # Define models array: each element contains "model_name endpoint_address"
 MODELS=(
@@ -55,11 +56,11 @@ for model_config in "${MODELS[@]}"; do
         if [[ "$METRIC_NAME" == *"ruler"* ]]; then
             GEN_KWARGS='--metadata {"max_seq_lengths":[4096,8192,16384,32768,65536,131072]}'
         else
-            GEN_KWARGS="--gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768"
+            GEN_KWARGS="--gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=${MAX_GEN_TOKENS}"
         fi
 
         lm_eval --model local-chat-completions \
-            --model_args pretrained=${MODEL_CKPT},base_url=${BASE_URL},num_concurrent=10,max_retries=2,timeout=3600 \
+            --model_args pretrained=${MODEL_CKPT},base_url=${BASE_URL},num_concurrent=10,max_retries=2,timeout=3600,max_gen_toks=${MAX_GEN_TOKENS} \
             --tasks ${METRIC_NAME} \
             --output_path ${MODEL_CKPT}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
             --num_fewshot $NUM_FEWSHOT \
