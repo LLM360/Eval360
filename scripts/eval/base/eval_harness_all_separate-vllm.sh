@@ -76,4 +76,4 @@ for metric_config in "${METRICS[@]}"; do
         $TRUST_FLAG \
         $GEN_KWARGS &
 done
-sleep infinity
+wait

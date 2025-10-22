@@ -72,4 +72,4 @@ for model_config in "${MODELS[@]}"; do
             $GEN_KWARGS &
     done
 done
-sleep infinity
+wait
