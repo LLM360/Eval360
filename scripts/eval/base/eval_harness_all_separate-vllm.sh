@@ -54,7 +54,7 @@ for metric_config in "${METRICS[@]}"; do
     if [[ "$METRIC_NAME" == *"gsm8k"* || "$METRIC_NAME" == *"minerva_math"* || "$METRIC_NAME" == *"gpqa_diamond"* ]]; then
         GEN_KWARGS="--gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=${MAX_GEN_TOKENS}"
     elif [[ "$METRIC_NAME" == *"ruler"* ]]; then
-        GEN_KWARGS='--metadata {"max_seq_lengths":[4096,8192,16384,32768,65536,131072]} --gen_kwargs max_gen_toks=${MAX_GEN_TOKENS}'
+        GEN_KWARGS='--metadata {"max_seq_lengths":[4096,8192,16384,32768,65536,131072]} --gen_kwargs max_gen_toks='${MAX_GEN_TOKENS}
     else
         GEN_KWARGS=""
     fi
