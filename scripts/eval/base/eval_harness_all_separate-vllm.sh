@@ -54,22 +54,20 @@ for metric_config in "${METRICS[@]}"; do
     if [[ "$METRIC_NAME" == *"gsm8k"* || "$METRIC_NAME" == *"minerva_math"* || "$METRIC_NAME" == *"gpqa_diamond"* ]]; then
         GEN_KWARGS="--gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=${MAX_GEN_TOKENS}"
     elif [[ "$METRIC_NAME" == *"ruler"* ]]; then
-        GEN_KWARGS='--metadata {"max_seq_lengths":[4096,8192,16384,32768,65536,131072]} --gen_kwargs max_gen_toks='${MAX_GEN_TOKENS}
+        GEN_KWARGS='--metadata {"max_seq_lengths":[4096,8192,16384,32768,65536,131072]}'
     else
         GEN_KWARGS=""
     fi
 
     # Build model args based on trust_remote_code setting
     if [[ "$METRIC_NAME" == *"bbh"* ]]; then
-        MODEL_ARGS="pretrained=${MODEL_CKPT},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7,trust_remote_code=True"
         TRUST_FLAG="--trust_remote_code"
     else
-        MODEL_ARGS="pretrained=${MODEL_CKPT},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.7,max_gen_toks=${MAX_GEN_TOKENS}"
         TRUST_FLAG=""
     fi
 
     lm_eval --model local-completions \
-        --model_args pretrained=${MODEL_CKPT},base_url=${BASE_URL},num_concurrent=10,max_retries=2,timeout=3600,tokenized_requests=False,max_gen_toks=${MAX_GEN_TOKENS} \
+        --model_args pretrained=${MODEL_CKPT},base_url=${BASE_URL},num_concurrent=10,max_retries=2,timeout=3600,tokenized_requests=False,max_gen_toks=${MAX_GEN_TOKENS},max_length=${MAX_GEN_TOKENS} \
         --tasks ${METRIC_NAME} \
         --output_path ${MODEL_CKPT}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
         --batch_size $BATCH_SIZE \

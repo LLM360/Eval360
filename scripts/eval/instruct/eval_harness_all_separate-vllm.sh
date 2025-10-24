@@ -54,13 +54,13 @@ for model_config in "${MODELS[@]}"; do
 
         # Add generation kwargs
         if [[ "$METRIC_NAME" == *"ruler"* ]]; then
-            GEN_KWARGS='--metadata {"max_seq_lengths":[4096,8192,16384,32768,65536,131072]} --gen_kwargs max_gen_toks='${MAX_GEN_TOKENS}
+            GEN_KWARGS='--metadata {"max_seq_lengths":[4096,8192,16384,32768,65536,131072]}'
         else
             GEN_KWARGS="--gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=${MAX_GEN_TOKENS}"
         fi
 
         lm_eval --model local-chat-completions \
-            --model_args pretrained=${MODEL_CKPT},base_url=${BASE_URL},num_concurrent=10,max_retries=2,timeout=3600,max_gen_toks=${MAX_GEN_TOKENS} \
+            --model_args pretrained=${MODEL_CKPT},base_url=${BASE_URL},num_concurrent=10,max_retries=2,timeout=3600,max_gen_toks=${MAX_GEN_TOKENS},max_length=${MAX_GEN_TOKENS} \
             --tasks ${METRIC_NAME} \
             --output_path ${MODEL_CKPT}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
             --num_fewshot $NUM_FEWSHOT \
