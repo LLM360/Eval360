@@ -13,7 +13,7 @@
 TP=8
 TOKENIZER="/lustrefs/users/xuezhe.ma/projects/data/tokenizers/jais250k"
 CKPT_DIR="/lustrefs/users/runner/workspace/checkpoints"
-MODEL_NAME="k2plus_stage2.5_attn32k_jais250k_tp8"
+MODEL_NAME="k2plus_stage3_attn128k_jais250k_rope10m_tp8_bestfit"
 HF_CONFIG="/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed/iter_1249000"
 
 export PATH="/lustrefs/users/runner/anaconda3/envs/xllm2.7.1/bin:/lustrefs/users/runner/anaconda3/bin:$PATH"
@@ -21,7 +21,7 @@ export PATH="/lustrefs/users/runner/anaconda3/envs/xllm2.7.1/bin:/lustrefs/users
 # echo $PATH
 # which python
 
-for ((i = 2500 ; i <= 10000; i += 2500)) ;
+for ((i = 2500 ; i <= 17500; i += 2500)) ;
 do
     ITER=$(printf "%07d" $i)
     NEXT_ITER=$(printf "%07d" $((i+2500)))
@@ -38,7 +38,7 @@ do
     #     sleep 60
     # done
 
-    echo "Folder ${NEXT_CKPT} exists. Start converting ${ITER} ..."
+    # echo "Folder ${NEXT_CKPT} exists. Start converting ${ITER} ..."
     HF_CKPT="${CKPT_DIR}/huggingface/${MODEL_NAME}/checkpoints/checkpoint_${ITER}"
     if [[ -d ${HF_CKPT} ]]; then
         echo "Folder ${HF_CKPT} exists. Skip converting ${ITER} ..."
@@ -57,7 +57,8 @@ do
             --hf_config_name_or_path $HF_CONFIG \
             --hf_tokenizer_name_or_path $TOKENIZER \
             --do_tp_copy_sanity_check False \
-            # --rope_theta 1000000 \
+            --rope_theta 10000000 \
+            --max_position_embeddings 131072
             # --max_position_embeddings 524288
         # remove temp files
         echo "remove temp files in ${CURRENT_CKPT}"

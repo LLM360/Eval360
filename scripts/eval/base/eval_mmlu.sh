@@ -11,6 +11,7 @@
 
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
 # export HF_HUB_OFFLINE=1
 
 MODEL_NAME=$1

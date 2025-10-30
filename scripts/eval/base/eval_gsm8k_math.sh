@@ -11,7 +11,7 @@
 
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
-
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
 # HF_DIR=/lustrefs/users/runner/checkpoints/huggingface
 MODEL_NAME=$1
 START_ITER=$2
@@ -36,10 +36,10 @@ do
 
   # Define metrics array: each element contains "metric_name:fewshot_count"
   METRICS=(
-    # "gsm8k:5"
-    # "gsm8k_cot:8"
-    # "minerva_math:4"
-    # "gsm8k_reasoning_base:0"
+    "gsm8k:5"
+    "gsm8k_cot:8"
+    "minerva_math:4"
+    "gsm8k_reasoning_base:0"
     "minerva_math_reasoning_base:0"
   )
   

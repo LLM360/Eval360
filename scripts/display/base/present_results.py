@@ -15,40 +15,42 @@ WORKSPACE_CHECKPOINT_DIR = "/lustrefs/users/runner/workspace/checkpoints/hugging
 
 # Metrics configuration mapping task names to their categories
 METRICS_CONFIG = {
-    # "arc_challenge": ["english", "mc"],
-    # "gsm8k": ["math", "gen"],
-    # "gsm8k_cot": ["math", "gen"],
+    "arc_challenge": ["english", "mc"],
+    "gsm8k": ["math", "gen"],
+    "gsm8k_cot": ["math", "gen"],
+    "gsm8k_reasoning_base": ["math", "gen"],
+    "minerva_math": ["math", "gen"],
     "minerva_math_reasoning_base": ["math", "gen"],
-    # "hellaswag": ["english", "mc"],
-    # "mmlu": ["english", "mc"],
-    # "mmlu_arabic": ["arabic", "mc"],
-    # "truthfulqa_mc2": ["english", "mc"],
-    # "winogrande": ["english", "mc"],
+    "hellaswag": ["english", "mc"],
+    "mmlu": ["english", "mc"],
+    "mmlu_arabic": ["arabic", "mc"],
+    "truthfulqa_mc2": ["english", "mc"],
+    "winogrande": ["english", "mc"],
     # "leaderboard_gpqa_diamond": ["english", "mc"],
-    # "gpqa_diamond_cot_zeroshot": ["english", "gen"],
-    # "bbh": ["english", "gen"],
-    # "mmlu_pro": ["english", "gen"],
-    # "mbpp": ["code", "gen"],
-    # "humaneval": ["code", "gen"],
-    # "humaneval_64": ["code", "gen"],
-    # "ifeval": ["english"],
-    # "piqa": ["english", "mc"],
-    "gsm8k_reasoning_base": ["math", "gen"]
+    "gpqa_diamond_cot_zeroshot": ["english", "gen"],
+    "bbh": ["english", "gen"],
+    "mmlu_pro": ["english", "gen"],
+    "mbpp": ["code", "gen"],
+    "humaneval": ["code", "gen"],
+    "humaneval_64": ["code", "gen"],
+    "ifeval": ["english"],
+    "piqa": ["english", "mc"]
 }
 
 # Baseline models for comparison
 BASELINE_MODELS = {
-    f"{BASE_CHECKPOINT_DIR}/k2-65b": "k2-65b",
-    f"{BASE_CHECKPOINT_DIR}/llama3-70b": "llama3-70b",
-    f"{BASE_CHECKPOINT_DIR}/qwen2.5-32b": "qwen2.5-32b",
-    f"{BASE_CHECKPOINT_DIR}/qwen2.5-72b": "qwen2.5-72b",
-    f"{BASE_CHECKPOINT_DIR}/falcon-h1-34b": "falcon-h1-34b",
-    f"{BASE_CHECKPOINT_DIR}/llama3.1-70b": "llama3.1-70b",
-    f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new/checkpoints/checkpoint_0005000": "midtrain-stage4",
-    f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage2.5_attn32k_jais250k_tp8/checkpoints/checkpoint_0010000": "midtrain-stage4.5",
+    # f"{BASE_CHECKPOINT_DIR}/k2-65b": "k2-65b",
+    # f"{BASE_CHECKPOINT_DIR}/llama3-70b": "llama3-70b",
+    # f"{BASE_CHECKPOINT_DIR}/qwen2.5-32b": "qwen2.5-32b",
+    # f"{BASE_CHECKPOINT_DIR}/qwen2.5-72b": "qwen2.5-72b",
+    # f"{BASE_CHECKPOINT_DIR}/falcon-h1-34b": "falcon-h1-34b",
+    # f"{BASE_CHECKPOINT_DIR}/llama3.1-70b": "llama3.1-70b",
+    # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new/checkpoints/checkpoint_0005000": "midtrain-stage4",
+    # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage2.5_attn32k_jais250k_tp8/checkpoints/checkpoint_0010000": "midtrain-stage4.5",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage3_attn128k_jais250k_tp8_bestfit/checkpoints/checkpoint_0017500": "midtrain-stage3",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix/checkpoints/checkpoint_0045000": "midtrain-stage2",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0135000": "midtrain-stage1",
+    f"{BASE_CHECKPOINT_DIR}/qwen3-14b-base": "qwen3-14b-base",
 }
 
 # Model name aliases for easier reference
@@ -61,6 +63,7 @@ MODEL_NAME_ALIASES = {
     "stage2_v1": "k2plus_stage2_attn64k_jais250k_tp8_normal",
     "stage2_v2": "k2plus_stage2_attn64k_jais250k_tp8_bestfit",
     "stage2": "k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix",
+    "stage3_rope10m": "k2plus_stage3_attn128k_jais250k_rope10m_tp8_bestfit",
     "stage3": "k2plus_stage3_attn128k_jais250k_tp8_bestfit",
     "stage4": "k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new",
     "stage4.5": "k2plus_stage2.5_attn32k_jais250k_tp8"
@@ -86,10 +89,10 @@ RESULT_EXTRACTION_KEYS = {
     'mbpp': 'pass_at_1,none',
     'humaneval': 'pass@1,create_test',
     'humaneval_64': 'pass@64,create_test',
-    'gsm8k_cot': 'math_verify,none',
-    'gsm8k': 'math_verify,none',
-    'minerva_math': 'math_verify,none',
+    'gsm8k_cot': 'exact_match,flexible-extract',
+    'gsm8k': 'exact_match,flexible-extract',
     'gsm8k_reasoning_base': 'math_verify,none',
+    'minerva_math': 'math_verify,none',
     'minerva_math_reasoning_base': 'math_verify,none'
 }
 
@@ -244,7 +247,7 @@ def calculate_category_averages(outputs: Dict[str, float]) -> List[float]:
 # Main Processing Functions
 # =========================
 
-def process_single_model(model_path: str, cache: List[float], count: int) -> Tuple[List, List[float], int]:
+def process_single_model(model_path: str, cache: List[float], count: int) -> Tuple[List, List, List[float], int]:
     """Process results for a single model.
 
     Args:
@@ -253,7 +256,7 @@ def process_single_model(model_path: str, cache: List[float], count: int) -> Tup
         count: Current count for checkpoint averaging
 
     Returns:
-        Tuple of (row_data, updated_cache, updated_count)
+        Tuple of (original_row_data, averages_row_data, updated_cache, updated_count)
     """
     model_name = BASELINE_MODELS.get(model_path, model_path.split("/")[-1])
 
@@ -269,9 +272,6 @@ def process_single_model(model_path: str, cache: List[float], count: int) -> Tup
     # Calculate category averages
     category_avg = calculate_category_averages(outputs)
 
-    # Update cache with current outputs
-    cache.extend(outputs.values())
-
     # Handle checkpoint-specific logic
     if sum(outputs.values()) != 0:
         if "checkpoint" in model_name:
@@ -279,38 +279,54 @@ def process_single_model(model_path: str, cache: List[float], count: int) -> Tup
             count += 1
 
             if count == CHECKPOINT_AVERAGE_COUNT:
+                # Update cache with current outputs before calculating average
+                cache.extend(outputs.values())
                 avg = calculate_average_format(cache)
-                row = [model_name, avg] + category_avg + list(outputs.values())
-                return [row], [], 0
+                # Original table row: just model name and individual metrics
+                original_row = [model_name] + list(outputs.values())
+                # Averages table row: model name, avg, and category averages
+                averages_row = [model_name, avg] + category_avg
+                return [original_row], [averages_row], [], 0
             else:
-                row = [model_name, "x"] + category_avg + list(outputs.values())
-                return [row], cache, count
+                # Update cache with current outputs for accumulation
+                cache.extend(outputs.values())
+                # Original table row: just model name and individual metrics
+                original_row = [model_name] + list(outputs.values())
+                # Averages table row: model name, "x", and category averages
+                averages_row = [model_name, "x"] + category_avg
+                return [original_row], [averages_row], cache, count
         else:
-            avg = calculate_average_format(cache)
-            row = [model_name, avg] + category_avg + list(outputs.values())
-            return [row], [], count
+            # For non-checkpoint models, calculate average from current outputs
+            avg = calculate_average_format(list(outputs.values()))
+            # Original table row: just model name and individual metrics
+            original_row = [model_name] + list(outputs.values())
+            # Averages table row: model name, avg, and category averages
+            averages_row = [model_name, avg] + category_avg
+            return [original_row], [averages_row], [], count
 
-    return [], cache, count
+    return [], [], cache, count
 
 
-def process_model_results(model_paths: List[str]) -> List[List[Any]]:
+def process_model_results(model_paths: List[str]) -> Tuple[List[List[Any]], List[List[Any]]]:
     """Process evaluation results for multiple models.
 
     Args:
         model_paths: List of model directory paths
 
     Returns:
-        List of rows containing processed results
+        Tuple of (original_rows, averages_rows) containing processed results
     """
-    rows = []
+    original_rows = []
+    averages_rows = []
     cache = []
     count = 0
 
     for model_path in model_paths:
-        model_rows, cache, count = process_single_model(model_path, cache, count)
-        rows.extend(model_rows)
+        model_original_rows, model_averages_rows, cache, count = process_single_model(model_path, cache, count)
+        original_rows.extend(model_original_rows)
+        averages_rows.extend(model_averages_rows)
 
-    return rows
+    return original_rows, averages_rows
 
 
 # Main Functions
@@ -350,22 +366,14 @@ def get_checkpoint_directories(model_name: str) -> List[str]:
 
     return sorted(checkpoint_dirs)
 
-def generate_table_headers() -> List[str]:
-    """Generate table headers for the results display.
+def generate_original_table_headers() -> List[str]:
+    """Generate table headers for the original metrics display.
 
     Returns:
-        List of header strings
+        List of header strings for individual metrics
     """
-    base_headers = [
-        "model",
-        "avg",
-        "gen_avg",
-        "mc_avg",
-        "english_avg",
-        "math_avg",
-        "code_avg"
-    ]
-
+    base_headers = ["MODEL"]
+    
     metric_headers = [
         METRIC_DISPLAY_ALIASES.get(metric, metric)
         for metric in METRICS_CONFIG
@@ -373,33 +381,75 @@ def generate_table_headers() -> List[str]:
 
     return base_headers + metric_headers
 
-def display_results(baseline_rows: List[List[Any]], k2_plus_rows: List[List[Any]]) -> None:
-    """Display the results in a formatted table.
+
+def generate_averages_table_headers() -> List[str]:
+    """Generate table headers for the averages display.
+
+    Returns:
+        List of header strings for averages
+    """
+    return [
+        "MODEL",
+        "AVG",
+        "GEN_AVG",
+        "MC_AVG",
+        "ENGLISH_AVG",
+        "MATH_AVG",
+        "CODE_AVG"
+    ]
+
+def display_results(baseline_original_rows: List[List[Any]], baseline_averages_rows: List[List[Any]], 
+                   k2_plus_original_rows: List[List[Any]], k2_plus_averages_rows: List[List[Any]]) -> None:
+    """Display the results in two formatted tables.
 
     Args:
-        baseline_rows: Rows for baseline models
-        k2_plus_rows: Rows for k2+ models
+        baseline_original_rows: Original rows for baseline models
+        baseline_averages_rows: Averages rows for baseline models
+        k2_plus_original_rows: Original rows for k2+ models
+        k2_plus_averages_rows: Averages rows for k2+ models
     """
     # Sort baseline rows (excluding the last one which is midtrain-stage3)
-    public_baseline_rows = baseline_rows[:-1]
-    public_baseline_rows.sort(key=lambda x: float(x[1]) if x[1] != 'x' else 0, reverse=True)
+    public_baseline_original_rows = baseline_original_rows[:-1]
+    public_baseline_averages_rows = baseline_averages_rows[:-1]
+    
+    # Sort by average score for original table (using the avg column from averages table)
+    public_baseline_original_rows.sort(key=lambda x: float(baseline_averages_rows[baseline_original_rows.index(x)][1]) 
+                                      if baseline_averages_rows[baseline_original_rows.index(x)][1] != 'x' else 0, reverse=True)
+    public_baseline_averages_rows.sort(key=lambda x: float(x[1]) if x[1] != 'x' else 0, reverse=True)
 
     # Sort k2+ rows by average score
-    sorted_k2_plus_rows = sorted(
-        k2_plus_rows,
+    sorted_k2_plus_original_rows = sorted(
+        k2_plus_original_rows,
+        reverse=True
+    )
+    sorted_k2_plus_averages_rows = sorted(
+        k2_plus_averages_rows,
         reverse=True
     )
 
-    # Combine all rows
-    all_rows = public_baseline_rows + baseline_rows[-1:] + sorted_k2_plus_rows
+    # Combine all rows for each table
+    all_original_rows = public_baseline_original_rows + baseline_original_rows[-1:] + sorted_k2_plus_original_rows
+    all_averages_rows = public_baseline_averages_rows + baseline_averages_rows[-1:] + sorted_k2_plus_averages_rows
 
     # Generate headers
-    headers = generate_table_headers()
+    original_headers = generate_original_table_headers()
+    averages_headers = generate_averages_table_headers()
 
-    # Display table
+    # Display original metrics table
+    print("=== ORIGINAL METRICS TABLE ===")
     print(tabulate(
-        all_rows,
-        headers=headers,
+        all_original_rows,
+        headers=original_headers,
+        tablefmt="tsv",
+        numalign="right",
+        floatfmt=".2f",
+        maxcolwidths=20
+    ))
+    
+    print("\n=== AVERAGES TABLE ===")
+    print(tabulate(
+        all_averages_rows,
+        headers=averages_headers,
         tablefmt="tsv",
         numalign="right",
         floatfmt=".2f",
@@ -419,13 +469,13 @@ def main(model_name: str) -> None:
     checkpoint_dirs = get_checkpoint_directories(full_model_name)
 
     # Process baseline models
-    baseline_rows = process_model_results(list(BASELINE_MODELS.keys()))
+    baseline_original_rows, baseline_averages_rows = process_model_results(list(BASELINE_MODELS.keys()))
 
     # Process k2+ model checkpoints
-    k2_plus_rows = process_model_results(checkpoint_dirs)
+    k2_plus_original_rows, k2_plus_averages_rows = process_model_results(checkpoint_dirs)
 
     # Display results
-    display_results(baseline_rows, k2_plus_rows)
+    display_results(baseline_original_rows, baseline_averages_rows, k2_plus_original_rows, k2_plus_averages_rows)
 
 
 # Entry Point
