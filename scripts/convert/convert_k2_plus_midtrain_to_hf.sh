@@ -13,7 +13,7 @@
 TP=8
 TOKENIZER="/lustrefs/users/xuezhe.ma/projects/data/tokenizers/jais250k"
 CKPT_DIR="/lustrefs/users/runner/workspace/checkpoints"
-MODEL_NAME="k2plus_stage3_attn128k_jais250k_rope10m_tp8_bestfit"
+MODEL_NAME="k2plus_stage5_attn32k_jais250k_rope10m_tp8"
 HF_CONFIG="/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed/iter_1249000"
 
 export PATH="/lustrefs/users/runner/anaconda3/envs/xllm2.7.1/bin:/lustrefs/users/runner/anaconda3/bin:$PATH"
@@ -21,7 +21,7 @@ export PATH="/lustrefs/users/runner/anaconda3/envs/xllm2.7.1/bin:/lustrefs/users
 # echo $PATH
 # which python
 
-for ((i = 2500 ; i <= 17500; i += 2500)) ;
+for ((i = 2500 ; i <= 50000; i += 2500)) ;
 do
     ITER=$(printf "%07d" $i)
     NEXT_ITER=$(printf "%07d" $((i+2500)))

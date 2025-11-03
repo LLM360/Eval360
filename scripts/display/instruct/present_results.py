@@ -242,7 +242,7 @@ def calculate_category_averages(outputs: Dict[str, float]) -> List[float]:
 # Main Processing Functions
 # =========================
 
-def process_single_model(model_path: str, cache: List[float], count: int) -> Tuple[List, List[float], int]:
+def process_single_model(model_path: str, cache: List[float], count: int) -> Tuple[List, List, List[float], int]:
     """Process results for a single model.
 
     Args:
@@ -251,7 +251,7 @@ def process_single_model(model_path: str, cache: List[float], count: int) -> Tup
         count: Current count for checkpoint averaging
 
     Returns:
-        Tuple of (row_data, updated_cache, updated_count)
+        Tuple of (original_row_data, averages_row_data, updated_cache, updated_count)
     """
     # model_name = BASELINE_MODELS.get(model_path, model_path.split("/")[-1])
     model_name = BASELINE_MODELS.get(model_path, model_path.split("/")[-3] + "/" + model_path.split("/")[-1])
@@ -268,9 +268,6 @@ def process_single_model(model_path: str, cache: List[float], count: int) -> Tup
     # Calculate category averages
     category_avg = calculate_category_averages(outputs)
 
-    # Update cache with current outputs
-    cache.extend(outputs.values())
-
     # Handle checkpoint-specific logic
     if sum(outputs.values()) != 0:
         if "checkpoint" in model_name:
@@ -278,38 +275,54 @@ def process_single_model(model_path: str, cache: List[float], count: int) -> Tup
             count += 1
 
             if count == CHECKPOINT_AVERAGE_COUNT:
+                # Update cache with current outputs before calculating average
+                cache.extend(outputs.values())
                 avg = calculate_average_format(cache)
-                row = [model_name, avg] + category_avg + list(outputs.values())
-                return [row], [], 0
+                # Original table row: just model name and individual metrics
+                original_row = [model_name] + list(outputs.values())
+                # Averages table row: model name, avg, and category averages
+                averages_row = [model_name, avg] + category_avg
+                return [original_row], [averages_row], [], 0
             else:
-                row = [model_name, "x"] + category_avg + list(outputs.values())
-                return [row], cache, count
+                # Update cache with current outputs for accumulation
+                cache.extend(outputs.values())
+                # Original table row: just model name and individual metrics
+                original_row = [model_name] + list(outputs.values())
+                # Averages table row: model name, "x", and category averages
+                averages_row = [model_name, "x"] + category_avg
+                return [original_row], [averages_row], cache, count
         else:
-            avg = calculate_average_format(cache)
-            row = [model_name, avg] + category_avg + list(outputs.values())
-            return [row], [], count
+            # For non-checkpoint models, calculate average from current outputs
+            avg = calculate_average_format(list(outputs.values()))
+            # Original table row: just model name and individual metrics
+            original_row = [model_name] + list(outputs.values())
+            # Averages table row: model name, avg, and category averages
+            averages_row = [model_name, avg] + category_avg
+            return [original_row], [averages_row], [], count
 
-    return [], cache, count
+    return [], [], cache, count
 
 
-def process_model_results(model_paths: List[str]) -> List[List[Any]]:
+def process_model_results(model_paths: List[str]) -> Tuple[List[List[Any]], List[List[Any]]]:
     """Process evaluation results for multiple models.
 
     Args:
         model_paths: List of model directory paths
 
     Returns:
-        List of rows containing processed results
+        Tuple of (original_rows, averages_rows) containing processed results
     """
-    rows = []
+    original_rows = []
+    averages_rows = []
     cache = []
     count = 0
 
     for model_path in model_paths:
-        model_rows, cache, count = process_single_model(model_path, cache, count)
-        rows.extend(model_rows)
+        model_original_rows, model_averages_rows, cache, count = process_single_model(model_path, cache, count)
+        original_rows.extend(model_original_rows)
+        averages_rows.extend(model_averages_rows)
 
-    return rows
+    return original_rows, averages_rows
 
 
 # Main Functions
@@ -365,23 +378,14 @@ def get_checkpoint_directories(model_names: str | list[str]) -> List[str]:
 
         return sorted(checkpoint_dirs)
 
-def generate_table_headers() -> List[str]:
-    """Generate table headers for the results display.
+def generate_original_table_headers() -> List[str]:
+    """Generate table headers for the original metrics display.
 
     Returns:
-        List of header strings
+        List of header strings for individual metrics
     """
-    base_headers = [
-        "model",
-        "avg",
-        "gen_avg",
-        "mc_avg",
-        "english_avg",
-        "math_avg",
-        "code_avg",
-        "science_avg"
-    ]
-
+    base_headers = ["MODEL"]
+    
     metric_headers = [
         METRIC_DISPLAY_ALIASES.get(metric, metric)
         for metric in METRICS_CONFIG
@@ -389,29 +393,82 @@ def generate_table_headers() -> List[str]:
 
     return base_headers + metric_headers
 
-def display_results(baseline_rows: List[List[Any]], test_rows: List[List[Any]]) -> None:
-    """Display the results in a formatted table.
+
+def generate_averages_table_headers() -> List[str]:
+    """Generate table headers for the averages display.
+
+    Returns:
+        List of header strings for averages
+    """
+    return [
+        "MODEL",
+        "AVG",
+        "GEN_AVG",
+        "MC_AVG",
+        "ENGLISH_AVG",
+        "MATH_AVG",
+        "CODE_AVG",
+        "SCIENCE_AVG"
+    ]
+
+def display_results(baseline_original_rows: List[List[Any]], baseline_averages_rows: List[List[Any]], 
+                   test_original_rows: List[List[Any]], test_averages_rows: List[List[Any]]) -> None:
+    """Display the results in two formatted tables.
 
     Args:
-        baseline_rows: Rows for baseline models
-    test_rows: Rows for new models to test
+        baseline_original_rows: Original rows for baseline models
+        baseline_averages_rows: Averages rows for baseline models
+        test_original_rows: Original rows for test models
+        test_averages_rows: Averages rows for test models
     """
     # Sort baseline rows (excluding the last one which is midtrain-stage3)
-    public_baseline_rows = baseline_rows[:-1]
-    public_baseline_rows.sort(key=lambda x: float(x[1]) if x[1] != 'x' else 0, reverse=True)
+    public_baseline_original_rows = baseline_original_rows[:-1]
+    public_baseline_averages_rows = baseline_averages_rows[:-1]
+    
+    # Sort by average score for original table (using the avg column from averages table)
+    public_baseline_original_rows.sort(key=lambda x: float(baseline_averages_rows[baseline_original_rows.index(x)][1]) 
+                                      if baseline_averages_rows[baseline_original_rows.index(x)][1] != 'x' else 0, reverse=True)
+    public_baseline_averages_rows.sort(key=lambda x: float(x[1]) if x[1] != 'x' else 0, reverse=True)
 
-    test_rows.sort()
+    # Sort test rows by average score
+    sorted_test_averages_rows = sorted(
+        test_averages_rows,
+        key=lambda x: float(x[1]) if x[1] != 'x' else 0, 
+        reverse=True
+    )
+    # Sort original rows to match the order of averages rows
+    sorted_test_original_rows = []
+    for avg_row in sorted_test_averages_rows:
+        model_name = avg_row[0]
+        # Find matching original row
+        for orig_row in test_original_rows:
+            if orig_row[0] == model_name:
+                sorted_test_original_rows.append(orig_row)
+                break
 
-    # Combine all rows
-    all_rows = public_baseline_rows + baseline_rows[-1:] + test_rows
+    # Combine all rows for each table
+    all_original_rows = public_baseline_original_rows + baseline_original_rows[-1:] + sorted_test_original_rows
+    all_averages_rows = public_baseline_averages_rows + baseline_averages_rows[-1:] + sorted_test_averages_rows
 
     # Generate headers
-    headers = generate_table_headers()
+    original_headers = generate_original_table_headers()
+    averages_headers = generate_averages_table_headers()
 
-    # Display table
+    # Display original metrics table
+    print("=== ORIGINAL METRICS TABLE ===")
     print(tabulate(
-        all_rows,
-        headers=headers,
+        all_original_rows,
+        headers=original_headers,
+        tablefmt="tsv",
+        numalign="right",
+        floatfmt=".2f",
+        maxcolwidths=60
+    ))
+    
+    print("\n=== AVERAGES TABLE ===")
+    print(tabulate(
+        all_averages_rows,
+        headers=averages_headers,
         tablefmt="tsv",
         numalign="right",
         floatfmt=".2f",
@@ -431,13 +488,13 @@ def main(model_name: str) -> None:
     checkpoint_dirs = get_checkpoint_directories(full_model_names)
 
     # Process baseline models
-    baseline_rows = process_model_results(list(BASELINE_MODELS.keys()))
+    baseline_original_rows, baseline_averages_rows = process_model_results(list(BASELINE_MODELS.keys()))
 
     # Process k2+ model checkpoints
-    test_rows = process_model_results(checkpoint_dirs)
+    test_original_rows, test_averages_rows = process_model_results(checkpoint_dirs)
 
     # Display results
-    display_results(baseline_rows, test_rows)
+    display_results(baseline_original_rows, baseline_averages_rows, test_original_rows, test_averages_rows)
 
 
 # Entry Point

@@ -50,23 +50,25 @@ BASELINE_MODELS = {
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage3_attn128k_jais250k_tp8_bestfit/checkpoints/checkpoint_0017500": "midtrain-stage3",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix/checkpoints/checkpoint_0045000": "midtrain-stage2",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0135000": "midtrain-stage1",
-    f"{BASE_CHECKPOINT_DIR}/qwen3-14b-base": "qwen3-14b-base",
+    # f"{BASE_CHECKPOINT_DIR}/qwen3-14b-base": "qwen3-14b-base",
+    f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage3_attn128k_jais250k_rope10m_tp8_bestfit/checkpoints/checkpoint_0017500": "stage3-rope10m",
 }
 
 # Model name aliases for easier reference
 MODEL_NAME_ALIASES = {
-    "stage1_v1": "k2plus_data.v1_attn8k_jais250k_tp8",
-    "stage1_v2": "k2plus_data.v2_attn8k_jais250k_tp8",
-    "stage1_v3": "k2plus_data.v3_attn8k_jais250k_tp8",
-    "stage1_v4": "k2plus_data.v4_attn8k_jais250k_tp8",
+    # "stage1_v1": "k2plus_data.v1_attn8k_jais250k_tp8",
+    # "stage1_v2": "k2plus_data.v2_attn8k_jais250k_tp8",
+    # "stage1_v3": "k2plus_data.v3_attn8k_jais250k_tp8",
+    # "stage1_v4": "k2plus_data.v4_attn8k_jais250k_tp8",
     "stage1": "k2plus_stage1_attn8k_jais250k_tp8",
-    "stage2_v1": "k2plus_stage2_attn64k_jais250k_tp8_normal",
-    "stage2_v2": "k2plus_stage2_attn64k_jais250k_tp8_bestfit",
+    # "stage2_v1": "k2plus_stage2_attn64k_jais250k_tp8_normal",
+    # "stage2_v2": "k2plus_stage2_attn64k_jais250k_tp8_bestfit",
     "stage2": "k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix",
     "stage3_rope10m": "k2plus_stage3_attn128k_jais250k_rope10m_tp8_bestfit",
-    "stage3": "k2plus_stage3_attn128k_jais250k_tp8_bestfit",
-    "stage4": "k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new",
-    "stage4.5": "k2plus_stage2.5_attn32k_jais250k_tp8"
+    # "stage3": "k2plus_stage3_attn128k_jais250k_tp8_bestfit",
+    # "stage4": "k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new",
+    # "stage4.5": "k2plus_stage2.5_attn32k_jais250k_tp8",
+    "stage5": "k2plus_stage5_attn32k_jais250k_rope10m_tp8"
 }
 
 # Constants for result processing
