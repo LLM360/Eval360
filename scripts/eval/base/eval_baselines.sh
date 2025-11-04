@@ -10,6 +10,7 @@
 #SBATCH --error=/lustrefs/users/runner/slurm/eval_baseline.err
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
 export HF_ALLOW_CODE_EVAL="1"
 export VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
 

@@ -11,6 +11,7 @@
 
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
 # HF_DIR=/lustrefs/users/runner/checkpoints/huggingface
 # HF_DIR=/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed
@@ -48,7 +49,9 @@ do
       --tasks ${METRIC_NAME} \
       --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
       --batch_size auto \
-      --log_samples
+      --num_fewshot $NUM_FEWSHOT \
+      --log_samples \
+      # --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768
   # fi
 
 done

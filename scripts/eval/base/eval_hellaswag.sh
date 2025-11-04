@@ -11,6 +11,7 @@
 
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
 # HF_DIR=/lustrefs/users/runner/checkpoints/huggingface
 # HF_DIR=/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed
 CKPT_DIR="/lustrefs/users/runner/workspace/checkpoints"

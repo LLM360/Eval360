@@ -1,15 +1,3 @@
-[submodule "LOOM-Scope"]
-	path = LOOM-Scope
-	url = https://github.com/LCM-Lab/LOOM-Scope.git
 [submodule "lm-evaluation-harness"]
 	path = lm-evaluation-harness
-	url = https://github.com/EleutherAI/lm-evaluation-harness.git
-[submodule "Math-Verify"]
-	path = Math-Verify
-	url = https://github.com/huggingface/Math-Verify.git
-[submodule "evalplus"]
-	path = evalplus
-	url = https://github.com/evalplus/evalplus.git
-[submodule "matharena"]
-	path = matharena
-	url = https://github.com/eth-sri/matharena.git
+	url = https://github.com/yukiontheiceberg/lm-evaluation-harness.git

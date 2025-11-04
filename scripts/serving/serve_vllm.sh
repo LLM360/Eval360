@@ -11,12 +11,12 @@
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
 
-MODEL_NAME=/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b-instruct
+MODEL_NAME=/lustrefs/users/runner/workspace/checkpoints/huggingface/sft/mid4_sft_reasoning_am_64k_tknz_251014/checkpoints/checkpoint_0001500
 VLLM_PORT=8080
 
 vllm serve ${MODEL_NAME} \
  --tensor_parallel_size 8 \
- --rope-scaling '{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}' \
  --max-model-len 131072  \
  --override-generation-config '{"max_new_tokens": 131072}' \
- --port ${VLLM_PORT}
+ --port ${VLLM_PORT} \
+ #  --rope-scaling '{"rope_type":"yarn","factor":4.0,"original_max_position_embeddings":32768}' \
