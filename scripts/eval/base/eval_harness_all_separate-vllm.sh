@@ -13,7 +13,7 @@ export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
 export HF_ALLOW_CODE_EVAL="1"
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
-MODEL_NAME=/lustrefs/users/suqi.sun/projects/Eval360/models/olmo-3-1125-32b
+MODEL_NAME=/lustrefs/users/runner/checkpoints/huggingface/qwen3-14b-base
 VLLM_PORT=8080
 BASE_URL="http://localhost:${VLLM_PORT}/v1/completions"
 OUTPUT_PATH=$MODEL_NAME/eval_results

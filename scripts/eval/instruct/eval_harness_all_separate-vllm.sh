@@ -23,7 +23,7 @@ REASONING_EFFORT=high
 SYSTEM_PROMPT="The user asks a question, and the Assistant solves it. The assistant first thinks about the reasoning process in the mind and then provides the user with the final answer. The answer are enclosed within \boxed{}. In the answer mention each unknown and its solution, for example, \boxed{10}. Now the user asks you to solve a reasoning problem."
 
 vllm serve ${MODEL_NAME} \
- --tensor_parallel_size 4 \
+ --tensor_parallel_size 8 \
  --gpu-memory-utilization 0.8 \
  --trust-remote-code \
  --port ${VLLM_PORT} &
