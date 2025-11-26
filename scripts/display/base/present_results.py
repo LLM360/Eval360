@@ -30,16 +30,20 @@ METRICS_CONFIG = {
     "gsm8k_reasoning_base": ["math", "gen"],
     "minerva_math": ["math", "gen"],
     "minerva_math_reasoning_base": ["math", "gen"],
+    # "minerva_math500": ["math", "gen"],
     "hellaswag": ["english", "mc"],
     "mmlu": ["english", "mc"],
+    "mmlu_generative": ["english", "gen"],
     "mmlu_arabic": ["arabic", "mc"],
     "truthfulqa_mc2": ["english", "mc"],
     "winogrande": ["english", "mc"],
     # "leaderboard_gpqa_diamond": ["english", "mc"],
     "gpqa_diamond_cot_zeroshot": ["english", "gen"],
+    "gpqa_diamond_reasoning_base": ["english", "gen"],
     "bbh": ["english", "gen"],
     "mmlu_pro": ["english", "gen"],
     "mbpp": ["code", "gen"],
+    # "mbpp_instruct": ["code", "gen"],
     "humaneval": ["code", "gen"],
     "humaneval_64": ["code", "gen"],
     "ifeval": ["english"],
@@ -54,13 +58,16 @@ BASELINE_MODELS = {
     # f"{BASE_CHECKPOINT_DIR}/qwen2.5-72b": "qwen2.5-72b",
     # f"{BASE_CHECKPOINT_DIR}/falcon-h1-34b": "falcon-h1-34b",
     # f"{BASE_CHECKPOINT_DIR}/llama3.1-70b": "llama3.1-70b",
+    f"{BASE_CHECKPOINT_DIR}/deepseek-v3.1-base": "deepseek-v3.1-base",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new/checkpoints/checkpoint_0005000": "midtrain-stage4",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage2.5_attn32k_jais250k_tp8/checkpoints/checkpoint_0010000": "midtrain-stage4.5",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage3_attn128k_jais250k_tp8_bestfit/checkpoints/checkpoint_0017500": "midtrain-stage3",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix/checkpoints/checkpoint_0045000": "midtrain-stage2",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0135000": "midtrain-stage1",
     # f"{BASE_CHECKPOINT_DIR}/qwen3-14b-base": "qwen3-14b-base",
-    f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage3_attn128k_jais250k_rope10m_tp8_bestfit/checkpoints/checkpoint_0017500": "stage3-rope10m",
+    # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage3_attn128k_jais250k_rope10m_tp8_bestfit/checkpoints/checkpoint_0017500": "stage3-rope10m",
+    # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage4_attn512k_jais250k_rope10m_tp8_bestfit/checkpoints/checkpoint_0007500": "stage4-rope10m",
+    # f"{BASE_CHECKPOINT_DIR}/vocab_trimmed/iter_1249000": "k2+-base",
 }
 
 # Model name aliases for easier reference
@@ -77,7 +84,11 @@ MODEL_NAME_ALIASES = {
     # "stage3": "k2plus_stage3_attn128k_jais250k_tp8_bestfit",
     # "stage4": "k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new",
     # "stage4.5": "k2plus_stage2.5_attn32k_jais250k_tp8",
-    "stage5": "k2plus_stage5_attn32k_jais250k_rope10m_tp8"
+    "stage5": "k2plus_stage5_attn32k_jais250k_rope10m_tp8",
+    "stage5_merged": "k2plus_stage5_attn32k_jais250k_rope10m_tp8_with_think_merged",
+    "stage5_separated": "k2plus_stage5_attn32k_jais250k_rope10m_tp8_with_think_separated",
+    "stage4_rope10m": "k2plus_stage4_attn512k_jais250k_rope10m_tp8_bestfit",
+    "final": "k2plus_stage4_cont_attn512k_jais250k_rope10m_tp8_bestfit"
 }
 
 # Constants for result processing

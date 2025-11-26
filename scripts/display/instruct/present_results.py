@@ -34,6 +34,7 @@ METRICS_CONFIG = {
     "winogrande": ["english", "mc"],
     # "leaderboard_gpqa_diamond": ["english", "mc"],
     # "gpqa_diamond_cot_zeroshot": ["science", "gen"],
+    "gpqa_diamond_reasoning_instruct": ["english", "gen"],
     # "bbh": ["english", "gen"],
     "mmlu_pro": ["english", "gen"],
     "mbpp_instruct": ["code", "gen"],

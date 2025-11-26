@@ -19,6 +19,8 @@ RESULT_EXTRACTION_KEYS = {
     'hellaswag': 'acc_norm,none',
     'leaderboard_gpqa_diamond': 'acc_norm,none',
     'gpqa_diamond_cot_zeroshot': 'exact_match,flexible-extract',
+    'gpqa_diamond_reasoning_base': 'exact_match,none',
+    'gpqa_diamond_reasoning_instruct': 'exact_match,none',
     'piqa': 'acc_norm,none',
     'mmlu': 'acc,none',
     'truthfulqa_mc2': 'acc,none',
@@ -39,6 +41,7 @@ RESULT_EXTRACTION_KEYS = {
     'minerva_math': 'math_verify,none',
     'minerva_math_reasoning_base': 'math_verify,none',
     'minerva_math_reasoning_instruct': 'math_verify,none',
+    'minerva_math500': 'math_verify,none',
     'aime24': 'exact_match,none',
     'aime25': 'exact_match,none'
 }
@@ -49,6 +52,8 @@ METRIC_DISPLAY_ALIASES = {
     'hellaswag': 'HellaSwag',
     'leaderboard_gpqa_diamond': 'GPQA-Diamond-MC',
     'gpqa_diamond_cot_zeroshot': 'GPQA-Diamond-CoT',
+    'gpqa_diamond_reasoning_base': 'GPQA-Diamond-Reasoning',
+    'gpqa_diamond_reasoning_instruct': 'GPQA-Diamond-Reasoning',
     'piqa': 'PIQA',
     'mmlu': 'MMLU',
     'truthfulqa_mc2': 'TruthfulQA',
@@ -57,7 +62,7 @@ METRIC_DISPLAY_ALIASES = {
     'mmlu_pro': 'MMLU-Pro',
     'bbh': 'BBH',
     'mbpp': 'MBPP',
-    'mbpp_instruct': 'MBPP',
+    'mbpp_instruct': 'MBPP-Instruct',
     'humaneval': 'HumanEval',
     'humaneval_64': 'HumanEval-64',
     'humaneval_instruct': 'HumanEval',
@@ -69,6 +74,7 @@ METRIC_DISPLAY_ALIASES = {
     'minerva_math': 'Minerva-MATH',
     'minerva_math_reasoning_base': 'Minerva-MATH-Reasoning',
     'minerva_math_reasoning_instruct': 'Minerva-MATH-Reasoning',
+    'minerva_math500': 'MATH-500',
     'ifeval': 'IFEval',
     'aime24': 'AIME24',
     'aime25': 'AIME25'
