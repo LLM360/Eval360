@@ -11,12 +11,23 @@
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
 export HF_ALLOW_CODE_EVAL="1"
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
-# to run all eval tasks, we need 8 nodes in total
-MODEL_NAME="qwen2.5-72b-instruct"
-MODEL_CKPT="/lustrefs/users/runner/checkpoints/huggingface/${MODEL_NAME}"
-BASE_URL="http://azure-uk-hpc-H200-instance-374:8080/v1/completions"
-MAX_GEN_TOKENS=32768
+MODEL_NAME=/lustrefs/users/suqi.sun/projects/Eval360/models/olmo-3-1125-32b
+VLLM_PORT=8080
+BASE_URL="http://localhost:${VLLM_PORT}/v1/completions"
+OUTPUT_PATH=$MODEL_NAME/eval_results
+MAX_GEN_TOKENS=63488
+
+vllm serve ${MODEL_NAME} \
+ --tensor_parallel_size 8 \
+ --gpu-memory-utilization 0.8 \
+ --port ${VLLM_PORT} &
+
+until curl -sf http://localhost:${VLLM_PORT}/v1/models; do
+    printf '.'
+    sleep 5
+done
 
 # Define metrics array: each element contains "metric_name:fewshot_count:batch_size:trust_remote_code"
 METRICS=(
@@ -25,10 +36,10 @@ METRICS=(
     "leaderboard_gpqa_diamond:0:1"
     "piqa:0:1"
     "gpqa_diamond_cot_zeroshot:0:auto"
-    # "gsm8k:5:auto"
-    # "gsm8k_cot:8:auto"
-    # "minerva_math:4:auto"
-    # "gsm8k_reasoning_base:0:auto"
+    "gsm8k:5:auto"
+    "gsm8k_cot:8:auto"
+    "minerva_math:4:auto"
+    "gsm8k_reasoning_base:0:auto"
     "minerva_math_reasoning_base:0:auto"
     "hellaswag:10:1"
     "humaneval:0:auto"
@@ -51,8 +62,8 @@ for metric_config in "${METRICS[@]}"; do
     echo "Evaluating ${METRIC_NAME} with ${NUM_FEWSHOT} fewshot..."
 
     # Add generation kwargs
-    if [[ "$METRIC_NAME" == *"gsm8k"* || "$METRIC_NAME" == *"minerva_math"* || "$METRIC_NAME" == *"gpqa_diamond"* ]]; then
-        GEN_KWARGS="--gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=${MAX_GEN_TOKENS}"
+    if [[ "$METRIC_NAME" == *"reasoning"* || "$METRIC_NAME" == *"gpqa_diamond"* ]]; then
+        GEN_KWARGS="--gen_kwargs do_sample=true,temperature=0.7"
     elif [[ "$METRIC_NAME" == *"ruler"* ]]; then
         GEN_KWARGS='--metadata {"max_seq_lengths":[4096,8192,16384,32768,65536,131072]}'
     else
@@ -67,14 +78,14 @@ for metric_config in "${METRICS[@]}"; do
     fi
 
     lm_eval --model local-completions \
-        --model_args pretrained=${MODEL_CKPT},base_url=${BASE_URL},num_concurrent=10,max_retries=2,timeout=3600,tokenized_requests=False,max_gen_toks=${MAX_GEN_TOKENS},max_length=${MAX_GEN_TOKENS} \
+        --model_args pretrained=${MODEL_NAME},base_url=${BASE_URL},num_concurrent=30,max_retries=2,timeout=5400,tokenized_requests=False,max_gen_toks=${MAX_GEN_TOKENS} \
         --tasks ${METRIC_NAME} \
-        --output_path ${MODEL_CKPT}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
+        --output_path ${OUTPUT_PATH}/${METRIC_NAME}_${NUM_FEWSHOT}shots \
         --batch_size $BATCH_SIZE \
         --num_fewshot $NUM_FEWSHOT \
         --log_samples \
         --confirm_run_unsafe_code \
         $TRUST_FLAG \
-        $GEN_KWARGS &
+        $GEN_KWARGS & PIDS+=( $! )
 done
-wait
+wait ${PIDS[@]}
