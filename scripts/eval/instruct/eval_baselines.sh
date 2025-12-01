@@ -8,9 +8,9 @@
 #SBATCH --partition=main
 #SBATCH --output=/lustrefs/users/runner/slurm/eval_baseline.out
 #SBATCH --error=/lustrefs/users/runner/slurm/eval_baseline.err
-#SBATCH --exclude=azure-uk-hpc-H200-instance-145
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
 export HF_ALLOW_CODE_EVAL="1"
 export VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
 
@@ -23,7 +23,7 @@ declare -A metrics
 # metrics["leaderboard_gpqa_diamond"]=0
 # metrics["gpqa_diamond_cot_zeroshot"]=0
 # metrics["hellaswag"]=10
-# metrics["humaneval_instruct"]=0
+metrics["humaneval_instruct"]=0
 # metrics["mbpp_instruct"]=0
 # metrics["mmlu_pro"]=0
 # metrics["mmlu"]=5
@@ -35,14 +35,19 @@ declare -A metrics
 # metrics["minerva_math"]=0
 # metrics["humaneval_64_instruct"]=0
 # metrics["mmlu_stem_generative"]=0
-metrics["minerva_math_reasoning_instruct"]=0
-metrics["gsm8k_reasoning_instruct"]=0
+# metrics["minerva_math_reasoning_instruct"]=0
+# metrics["gsm8k_reasoning_instruct"]=0
 # metrics["mmlu_generative"]=0
+metrics["minerva_math500_instruct"]=0
 
 # Model configurations
 single_node_models=(
-  "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b-instruct"
-  "/lustrefs/users/runner/checkpoints/huggingface/k2-think"
+#   "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b-instruct"
+#   "/lustrefs/users/runner/checkpoints/huggingface/k2-think"
+#   "/lustrefs/users/runner/checkpoints/huggingface/qwen3-14b"
+#   "/lustrefs/users/runner/checkpoints/huggingface/llama-3.3-70b-instruct"
+  "/lustrefs/users/runner/workspace/checkpoints/huggingface/sft/mid4_sft_instruct_mix_oss_251120/checkpoints/checkpoint_0006300"
+#   "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b-instruct"
 )
 multi_node_models=(
   # "/lustrefs/users/runner/checkpoints/huggingface/deepseek-v3-base-bf16-new"
@@ -80,9 +85,8 @@ run_single_node_eval() {
         --fewshot_as_multiturn \
         --num_fewshot $shots \
         --log_samples \
-        --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=30000 \
         --confirm_run_unsafe_code \
-        --limit 10
+        --gen_kwargs '{"do_sample":true,"temperature":1.0,"top_p":0.95,"max_gen_toks":32768}'
 }
 
 # Function to run evaluation for multi node models
