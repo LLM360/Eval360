@@ -8,27 +8,30 @@
 #SBATCH --partition=main
 #SBATCH --output=/lustrefs/users/runner/slurm/eval_harness_all.out
 #SBATCH --error=/lustrefs/users/runner/slurm/eval_harness_all.err
+#SBATCH --exclude=azure-uk-hpc-H200-instance-012,azure-uk-hpc-H200-instance-013
 
 export PATH="/lustrefs/users/runner/anaconda3/bin:$PATH"
 export HF_ALLOW_CODE_EVAL="1"
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
-MODEL_NAME=/lustrefs/users/runner/checkpoints/huggingface/qwen3-32b
-VLLM_PORT=8080
-BASE_URL="http://localhost:${VLLM_PORT}/v1/chat/completions"
-OUTPUT_PATH=$MODEL_NAME/eval_results
-MAX_GEN_TOKENS=129024
-REASONING_EFFORT=high
+MODEL_NAME=openai/gpt-oss-120b
+VLLM_SERVER_ENDPOINT=${VLLM_SERVER_ENDPOINT:-azure-uk-hpc-H200-instance-275}
+VLLM_PORT=8000
+MAX_GEN_TOKENS=131072
+OUTPUT_PATH=${MODEL_NAME}-high/eval_results
+
 
 SYSTEM_PROMPT="The user asks a question, and the Assistant solves it. The assistant first thinks about the reasoning process in the mind and then provides the user with the final answer. The answer are enclosed within \boxed{}. In the answer mention each unknown and its solution, for example, \boxed{10}. Now the user asks you to solve a reasoning problem."
 
-vllm serve ${MODEL_NAME} \
- --tensor_parallel_size 8 \
- --gpu-memory-utilization 0.8 \
- --trust-remote-code \
- --port ${VLLM_PORT} &
+if [ "${VLLM_SERVER_ENDPOINT}" == "localhost" ]; then
+    vllm serve ${MODEL_NAME} \
+     --tensor_parallel_size 8 \
+     --gpu-memory-utilization 0.8 \
+     --trust-remote-code \
+     --port ${VLLM_PORT} &
+fi
 
-until curl -sf http://localhost:${VLLM_PORT}/v1/models; do
+until curl -sf ${VLLM_SERVER_ENDPOINT}:${VLLM_PORT}/v1/models; do
     printf '.'
     sleep 5
 done
@@ -41,16 +44,18 @@ METRICS=(
     ## "gsm8k:0:auto"
     ## "gsm8k_cot:0:auto"
     ## "minerva_math:0:auto"
-    "gsm8k_reasoning_instruct:0:auto"
-    "minerva_math_reasoning_instruct:0:auto"
+    # "gsm8k_reasoning_instruct:0:auto"
+    # "minerva_math_reasoning_instruct:0:auto"
+    # "minerva_math500_instruct:0:auto"
     ## "humaneval_instruct:0:auto"
-    "mbpp_instruct:0:auto"
-    ## "humaneval_64_instruct:0:auto"
-    "mmlu_pro:0:auto"
+    # "humaneval_instruct_reasoning:0:auto"
+    # "mbpp_instruct:0:auto"
+    # "humaneval_64_instruct:0:auto"
+    # "mmlu_pro:0:auto"
     ## "mmlu_redux_generative:0:auto"
-    ## "truthfulqa:0:1"
-    ## "winogrande:0:1"
-    "ifeval:0:auto"
+    "truthfulqa:0:auto"
+    "winogrande:0:auto"
+    # "ifeval:0:auto"
     ## "ruler:0:auto"
 )
 
@@ -58,28 +63,46 @@ for metric_config in "${METRICS[@]}"; do
     # Split the configuration into metric name and fewshot count
     IFS=':' read -r METRIC_NAME NUM_FEWSHOT BATCH_SIZE <<< "$metric_config"
     echo "Evaluating ${METRIC_NAME} with ${NUM_FEWSHOT} fewshot..."
-
-    # Add generation kwargs
-    if [[ "$METRIC_NAME" == *"ruler"* ]]; then
-        GEN_KWARGS='--metadata {"max_seq_lengths":[4096,8192,16384,32768,65536,131072]}'
+    
+    # Set BASE_URL based on task type
+    if [[ "$METRIC_NAME" == "winogrande" || "$METRIC_NAME" == "truthfulqa" ]]; then
+        BASE_URL="http://${VLLM_SERVER_ENDPOINT}:${VLLM_PORT}/v1/completions"
+        MODEL_TYPE="local-completions"
     else
-        GEN_KWARGS='--gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768'
-
-        # Uncomment the following line to enable different reasoning efforts
-        # GEN_KWARGS='--gen_kwargs {"do_sample":true,"temperature":1.0,"top_p":0.95,"max_gen_toks":32768,"chat_template_kwargs":{"reasoning_effort":"'$REASONING_EFFORT'"}}'
-
+        BASE_URL="http://${VLLM_SERVER_ENDPOINT}:${VLLM_PORT}/v1/chat/completions"
+        MODEL_TYPE="local-chat-completions"
     fi
 
-    lm_eval --model local-chat-completions \
-        --model_args pretrained=${MODEL_NAME},base_url=${BASE_URL},num_concurrent=30,max_retries=2,timeout=5400,max_gen_toks=${MAX_GEN_TOKENS},max_length=${MAX_GEN_TOKENS} \
+    # Add generation kwargs
+    if [[ "$MODEL_TYPE" == "local-chat-completions" ]]; then
+        if [[ "$METRIC_NAME" == *"ruler"* ]]; then
+            GEN_KWARGS='--metadata {"max_seq_lengths":[4096,8192,16384,32768,65536,131072]}'
+        else
+            GEN_KWARGS='--gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768'
+
+            # Uncomment the following line to enable different reasoning efforts
+            # GEN_KWARGS='--gen_kwargs {"do_sample":true,"temperature":1.0,"top_p":0.95,"max_gen_toks":32768,"chat_template_kwargs":{"reasoning_effort":"'$REASONING_EFFORT'"}}'
+
+        fi
+    else
+        GEN_KWARGS=''
+    fi
+
+    # Build model_args with conditional tokenizer
+    MODEL_ARGS="pretrained=${MODEL_NAME},base_url=${BASE_URL},num_concurrent=30,max_retries=2,timeout=5400,max_gen_toks=32768,max_length=${MAX_GEN_TOKENS}"
+    if [[ "$METRIC_NAME" == "winogrande" || "$METRIC_NAME" == "truthfulqa" ]]; then
+        MODEL_ARGS="${MODEL_ARGS},tokenizer=${MODEL_NAME}"
+    fi
+
+    lm_eval --model ${MODEL_TYPE} \
+        --model_args ${MODEL_ARGS} \
         --tasks ${METRIC_NAME} \
         --output_path ${OUTPUT_PATH}/${METRIC_NAME}_${NUM_FEWSHOT}shots \
         --num_fewshot $NUM_FEWSHOT \
         --batch_size $BATCH_SIZE \
         --log_samples \
-        --apply_chat_template \
-        --fewshot_as_multiturn \
         --confirm_run_unsafe_code \
+        --apply_chat_template --fewshot_as_multiturn \
         $GEN_KWARGS & PIDS+=( $! )
 
         # Add the following argument if \boxed{} parsing is required
