@@ -42,11 +42,10 @@ metrics["minerva_math500_instruct"]=0
 
 # Model configurations
 single_node_models=(
-#   "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b-instruct"
-#   "/lustrefs/users/runner/checkpoints/huggingface/k2-think"
-#   "/lustrefs/users/runner/checkpoints/huggingface/qwen3-14b"
-#   "/lustrefs/users/runner/checkpoints/huggingface/llama-3.3-70b-instruct"
-  "/lustrefs/users/runner/workspace/checkpoints/huggingface/sft/mid4_sft_instruct_mix_oss_251120/checkpoints/checkpoint_0006300"
+  "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b-instruct"
+  "/lustrefs/users/runner/checkpoints/huggingface/k2-think"
+  "/lustrefs/users/runner/checkpoints/huggingface/qwen3-14b"
+  "/lustrefs/users/runner/checkpoints/huggingface/llama-3.3-70b-instruct"
 #   "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b-instruct"
 )
 multi_node_models=(
@@ -85,6 +84,7 @@ run_single_node_eval() {
         --fewshot_as_multiturn \
         --num_fewshot $shots \
         --log_samples \
+        --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768 \
         --confirm_run_unsafe_code \
         --gen_kwargs '{"do_sample":true,"temperature":1.0,"top_p":0.95,"max_gen_toks":32768}'
 }

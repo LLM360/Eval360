@@ -105,8 +105,8 @@ run_single_node_eval() {
     # Special case for GPQA Diamond CoT Zero-shot with other models
     elif [[ "${metric_name}" == "gpqa_diamond_cot_zeroshot" || "${metric_name}" == "mmlu_generative" || "${metric_name}" == "gsm8k_reasoning_base" || "${metric_name}" == "minerva_math500" ]]; then
         lm_eval --model vllm \
-            --model_args pretrained=${model_path},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.9,max_length=32768 \
-            --gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=32000 \
+            --model_args pretrained=${model_path},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.9 \
+            --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768 \
             --tasks ${metric_name} \
             --output_path ${model_path}/eval_results/${metric_name}_${shots}shots \
             --batch_size auto \
