@@ -33,6 +33,7 @@ RESULT_EXTRACTION_KEYS = {
     'humaneval': 'pass@1,create_test',
     'humaneval_64': 'pass@64,create_test',
     'humaneval_instruct': 'pass@1,create_test',
+    'humaneval_instruct_reasoning': 'pass@1,extract_code',
     'humaneval_64_instruct': 'pass@64,create_test',
     'gsm8k_cot': 'exact_match,flexible-extract',
     'gsm8k': 'exact_match,flexible-extract',
@@ -42,6 +43,7 @@ RESULT_EXTRACTION_KEYS = {
     'minerva_math_reasoning_base': 'math_verify,none',
     'minerva_math_reasoning_instruct': 'math_verify,none',
     'minerva_math500': 'math_verify,none',
+    'minerva_math500_instruct': 'math_verify,none',
     'aime24': 'exact_match,none',
     'aime25': 'exact_match,none'
 }

@@ -27,6 +27,7 @@ METRICS_CONFIG = {
     # "arc_challenge": ["english", "mc"],
     "gsm8k_reasoning_instruct": ["math", "gen"],
     "minerva_math_reasoning_instruct": ["math", "gen"],
+    "minerva_math500_instruct": ["math", "gen"],
     # "hellaswag": ["english", "mc"],
     # "mmlu": ["english", "mc"],
     # "mmlu_arabic": ["arabic", "mc"],
@@ -34,12 +35,13 @@ METRICS_CONFIG = {
     "winogrande": ["english", "mc"],
     # "leaderboard_gpqa_diamond": ["english", "mc"],
     # "gpqa_diamond_cot_zeroshot": ["science", "gen"],
-    "gpqa_diamond_reasoning_instruct": ["english", "gen"],
+    # "gpqa_diamond_reasoning_instruct": ["english", "gen"],
     # "bbh": ["english", "gen"],
     "mmlu_pro": ["english", "gen"],
     "mbpp_instruct": ["code", "gen"],
-    "humaneval_instruct": ["code", "gen"],
-    "humaneval_64_instruct": ["code", "gen"],
+    # "humaneval_instruct": ["code", "gen"],
+    "humaneval_instruct_reasoning": ["code", "gen"],
+    # "humaneval_64_instruct": ["code", "gen"],
     "ifeval": ["english", "gen"],
     # "aime24": ["math", "gen"],
     # "aime25": ["math", "gen"],
@@ -56,6 +58,25 @@ BASELINE_MODELS = {
     # f"{BASE_CHECKPOINT_DIR}/llama3.1-70b": "llama3.1-70b",
     f"{BASE_CHECKPOINT_DIR}/qwen2.5-72b-instruct": "qwen2.5-72b-instruct",
     f"{BASE_CHECKPOINT_DIR}/k2-think": "llm360/k2-think",
+    f"{BASE_CHECKPOINT_DIR}/qwen3-14b": "qwen3-14b",
+    f"{BASE_CHECKPOINT_DIR}/llama-3.3-70b-instruct": "llama-3.3-70b-instruct",
+    f"{BASE_CHECKPOINT_DIR}/qwen3-32b-instruct": "qwen3-32b-instruct",
+    f"{BASE_CHECKPOINT_DIR}/qwen3-32b": "qwen3-32b",
+    f"{BASE_CHECKPOINT_DIR}/mistral-small-3.1-24b-instruct-2503": "mistral-small-3.1-24B-instruct-2503",
+    f"{BASE_CHECKPOINT_DIR}/mistral-large-instruct-2411": "mistral-large-instruct-2411",
+    f"{BASE_CHECKPOINT_DIR}/minimax-m2": "minimax-m2",
+    f"{BASE_CHECKPOINT_DIR}/deepseek-v3.1": "deepseek-v3.1",
+    f"{BASE_CHECKPOINT_DIR}/glm-4.5-air": "glm-4.5-air",
+    f"{BASE_CHECKPOINT_DIR}/qwen3-235b-a22b-instruct-2507": "qwen3-235b-a22b-instruct-2507",
+    f"{BASE_CHECKPOINT_DIR}/qwen3-235b-a22b-thinking-2507": "qwen3-235b-a22b-thinking-2507",
+    f"{BASE_CHECKPOINT_DIR}/olmo-3-32b-think-sft": "olmo-3-32b-think-sft",
+    f"{BASE_CHECKPOINT_DIR}/olmo-3-32b-think": "olmo-3-32b-think",
+    f"{BASE_CHECKPOINT_DIR}/gpt-oss-120b-high": "gpt-oss-120b-high",
+    f"{BASE_CHECKPOINT_DIR}/gpt-oss-120b-medium": "gpt-oss-120b-medium",
+    f"{BASE_CHECKPOINT_DIR}/gpt-oss-120b-low": "gpt-oss-120b-low",
+    f"{WORKSPACE_CHECKPOINT_DIR}/sft/mid4_sft_instruct_mix_oss_251120/checkpoints/checkpoint_0006300-high": "mid4_sft_instruct_mix_oss_251120_epoch3-high",
+    f"{WORKSPACE_CHECKPOINT_DIR}/sft/mid4_sft_instruct_mix_oss_251120/checkpoints/checkpoint_0006300-medium": "mid4_sft_instruct_mix_oss_251120_epoch3-medium",
+    f"{WORKSPACE_CHECKPOINT_DIR}/sft/mid4_sft_instruct_mix_oss_251120/checkpoints/checkpoint_0006300-low": "mid4_sft_instruct_mix_oss_251120_epoch3-low",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new/checkpoints/checkpoint_0005000": "midtrain-stage4",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage3_attn128k_jais250k_tp8_bestfit/checkpoints/checkpoint_0017500": "midtrain-stage3",
     # f"{WORKSPACE_CHECKPOINT_DIR}/k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix/checkpoints/checkpoint_0045000": "midtrain-stage2",
@@ -164,15 +185,15 @@ def display_results(
         maxcolwidths=60
     ))
     
-    print("\n=== AVERAGES TABLE ===")
-    print(tabulate(
-        all_averages_rows,
-        headers=averages_headers,
-        tablefmt="tsv",
-        numalign="right",
-        floatfmt=".2f",
-        maxcolwidths=60
-    ))
+    # print("\n=== AVERAGES TABLE ===")
+    # print(tabulate(
+    #     all_averages_rows,
+    #     headers=averages_headers,
+    #     tablefmt="tsv",
+    #     numalign="right",
+    #     floatfmt=".2f",
+    #     maxcolwidths=60
+    # ))
 
 def main(model_name: str) -> None:
     """Main function to process and display model evaluation results.

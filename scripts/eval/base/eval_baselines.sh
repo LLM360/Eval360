@@ -30,9 +30,10 @@ metrics["mmlu"]=5
 metrics["truthfulqa"]=0
 metrics["winogrande"]=5
 # metrics["ifeval"]=0
-metrics["piqa"]=0
-metrics["gsm8k_cot"]=8
-metrics["minerva_math"]=4
+# metrics["piqa"]=0
+# metrics["gsm8k_cot"]=8
+# metrics["minerva_math"]=4
+metrics["minerva_math500"]=0
 # metrics["humaneval_64"]=0
 # metrics["mmlu_generative"]=0
 # metrics["gsm8k_reasoning_base"]=0
@@ -44,13 +45,13 @@ single_node_models=(
 #   "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-32b"
 #   "/lustrefs/users/runner/checkpoints/huggingface/qwen2.5-72b"
 #   "/lustrefs/users/runner/checkpoints/huggingface/falcon-h1-34b"
-#   "/lustrefs/users/runner/checkpoints/huggingface/llama3.1-70b"
-  # "/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed/iter_1249000"
-#   "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage3_attn128k_jais250k_tp8_bestfit/checkpoints/checkpoint_0017500",
-# "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix/checkpoints/checkpoint_0045000"
+  "/lustrefs/users/runner/checkpoints/huggingface/llama3.1-70b"
+#   "/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed/iter_1249000"
 #   "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage1_attn8k_jais250k_tp8/checkpoints/checkpoint_0135000"
-#   "/lustrefs/users/runner/checkpoints/huggingface/vocab_trimmed/iter_1249000/",
-"/lustrefs/users/runner/checkpoints/huggingface/deepseek-v3.1-base"
+#   "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage2_attn64k_jais250k_tp8_bestfit_fix/checkpoints/checkpoint_0045000"
+#   "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage3_attn128k_jais250k_rope10m_tp8_bestfit/checkpoints/checkpoint_0017500"
+#   "/lustrefs/users/runner/workspace/checkpoints/huggingface/k2plus_stage4_attn512k_jais250k_rope10m_tp8_bestfit/checkpoints/checkpoint_0010000"
+# "/lustrefs/users/runner/checkpoints/huggingface/deepseek-v3.1-base"
 )
 multi_node_models=(
   # "/lustrefs/users/runner/checkpoints/huggingface/deepseek-v3-base-bf16-new"
@@ -104,10 +105,10 @@ run_single_node_eval() {
                 --confirm_run_unsafe_code
         fi
     # Special case for GPQA Diamond CoT Zero-shot with other models
-    elif [[ "${metric_name}" == "gpqa_diamond_cot_zeroshot" || "${metric_name}" == "mmlu_generative" || "${metric_name}" == "gsm8k_reasoning_base" ]]; then
+    elif [[ "${metric_name}" == "gpqa_diamond_cot_zeroshot" || "${metric_name}" == "mmlu_generative" || "${metric_name}" == "gsm8k_reasoning_base" || "${metric_name}" == "minerva_math500" ]]; then
         lm_eval --model vllm \
-            --model_args pretrained=${model_path},tensor_parallel_size=8,gpu_memory_utilization=0.9 \
-            --gen_kwargs do_sample=true,temperature=1.0,max_gen_toks=32768 \
+            --model_args pretrained=${model_path},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.9 \
+            --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768 \
             --tasks ${metric_name} \
             --output_path ${model_path}/eval_results/${metric_name}_${shots}shots \
             --batch_size auto \
