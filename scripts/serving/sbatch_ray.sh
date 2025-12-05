@@ -88,3 +88,8 @@ done
 # srun --overlap --nodes=1 --ntasks=1 -w "$head_node" \
 MODEL_PATH="/lustrefs/users/runner/checkpoints/huggingface/deepseek-v3-base-bf16-new"
 vllm serve $MODEL_PATH --tensor-parallel-size 8 --pipeline_parallel_size $SLURM_NNODES --distributed-executor-backend ray
+
+MODEL_PATH="/lustrefs/users/richard.fan/moe_test/fp8"
+MODEL_PATH="/lustrefs/users/richard.fan/moe_test/bf16"
+DATA_PAR=$((8*$SLURM_NNODES))
+VLLM_LOGGING_LEVEL=debug vllm serve $MODEL_PATH --enable-expert-parallel --load-format dummy --data-parallel-size-local 8 --data-parallel-size $DATA_PAR --port 8000 --gpu-memory-utilization 0.90 --no-enable-prefix-caching  --distributed-executor-backend ray --data-parallel-backend ray

@@ -84,7 +84,11 @@ MODEL_NAME_ALIASES = {
     # "stage3": "k2plus_stage3_attn128k_jais250k_tp8_bestfit",
     # "stage4": "k2plus_stage4_attn512k_jais250k_tp8_bestfit_400nodes_new",
     # "stage4.5": "k2plus_stage2.5_attn32k_jais250k_tp8",
-    "stage5": "k2plus_stage5_attn32k_jais250k_rope10m_tp8"
+    "stage5": "k2plus_stage5_attn32k_jais250k_rope10m_tp8",
+    "stage5_merged": "k2plus_stage5_attn32k_jais250k_rope10m_tp8_with_think_merged",
+    "stage5_separated": "k2plus_stage5_attn32k_jais250k_rope10m_tp8_with_think_separated",
+    "stage4_rope10m": "k2plus_stage4_attn512k_jais250k_rope10m_tp8_bestfit",
+    "final": "k2plus_stage4_cont_attn512k_jais250k_rope10m_tp8_bestfit"
 }
 
 # Constants for result processing

@@ -1,9 +1,10 @@
 import fire
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers.models.mistral3 import Mistral3Model
 
 
-MODEL_NAME = 'meta-llama/Llama-3.1-70B'
-OUTPUT_DIR = '/lustrefs/users/runner/checkpoints/huggingface/llama3.1-70b'
+MODEL_NAME = 'mistralai/Mistral-Small-3.1-24B-Instruct-2503'
+OUTPUT_DIR = '/lustrefs/users/runner/checkpoints/huggingface/mistral-small-3.1-24b-instruct-2503'
 HF_TOKEN = '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'
 
 

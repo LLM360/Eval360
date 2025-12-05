@@ -17,24 +17,26 @@ export VLLM_ALLOW_LONG_MAX_MODEL_LEN=1
 # Define metrics and their shot counts
 declare -A metrics
 # metrics["mmlu_arabic"]=0
-# metrics["arc_challenge"]=25
-# metrics["gsm8k"]=5
-# metrics["bbh"]=3
+metrics["arc_challenge"]=25
+metrics["gsm8k"]=5
+metrics["bbh"]=3
 # metrics["leaderboard_gpqa_diamond"]=0
-# metrics["gpqa_diamond_cot_zeroshot"]=0
-# metrics["hellaswag"]=10
-# metrics["humaneval"]=0
-# metrics["mbpp"]=3
-# metrics["mmlu_pro"]=5
-# metrics["mmlu"]=5
-# metrics["truthfulqa"]=0
-# metrics["winogrande"]=5
+metrics["gpqa_diamond_cot_zeroshot"]=0
+metrics["hellaswag"]=10
+metrics["humaneval"]=0
+metrics["mbpp"]=3
+metrics["mmlu_pro"]=5
+metrics["mmlu"]=5
+metrics["truthfulqa"]=0
+metrics["winogrande"]=5
 # metrics["ifeval"]=0
 # metrics["piqa"]=0
 # metrics["gsm8k_cot"]=8
 # metrics["minerva_math"]=4
 metrics["minerva_math500"]=0
 # metrics["humaneval_64"]=0
+# metrics["mmlu_generative"]=0
+# metrics["gsm8k_reasoning_base"]=0
 
 # Model configurations
 single_node_models=(
@@ -84,7 +86,7 @@ run_single_node_eval() {
             # Special configuration for GPQA Diamond CoT with falcon
             CUDA_VISIBLE_DEVICES=0,1 lm_eval --model vllm \
                 --model_args pretrained=${model_path},tensor_parallel_size=2,dtype=bfloat16,gpu_memory_utilization=0.9,max_length=32768 \
-                --gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=32000 \
+                --gen_kwargs do_sample=true,temperature=1.0,max_gen_toks=32000 \
                 --tasks ${metric_name} \
                 --output_path ${model_path}/eval_results/${metric_name}_${shots}shots \
                 --batch_size auto \
@@ -116,7 +118,7 @@ run_single_node_eval() {
     else
         # Standard configuration for other metrics
         lm_eval --model vllm \
-            --model_args pretrained=${model_path},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.9 \
+            --model_args pretrained=${model_path},tensor_parallel_size=8,gpu_memory_utilization=0.9 \
             --tasks ${metric_name} \
             --output_path ${model_path}/eval_results/${metric_name}_${shots}shots \
             --batch_size auto \

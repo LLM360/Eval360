@@ -40,7 +40,7 @@ do
   METRICS=(
     "arc_challenge:25:1:false"
     "bbh:3:auto:true"
-    "leaderboard_gpqa_diamond:0:1:false"
+    # "leaderboard_gpqa_diamond:0:1:false"
     "piqa:0:1:false"
   )
   
@@ -65,7 +65,7 @@ do
       
       # Add generation kwargs for gpqa_diamond
       if [[ "$METRIC_NAME" == *"gpqa_diamond"* ]]; then
-        GEN_KWARGS="--gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=4096"
+        GEN_KWARGS="--gen_kwargs do_sample=true,temperature=1.0,max_gen_toks=4096"
       else
         GEN_KWARGS=""
       fi

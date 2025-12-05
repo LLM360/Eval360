@@ -38,6 +38,7 @@ do
   echo "${CKPT_DIR}/done.txt exists. Continuing..."
   # Define metrics array: each element contains "metric_name:fewshot_count:batch_size:trust_remote_code"
   METRICS=(
+    "gpqa_diamond_reasoning_base:0:auto"
     "gpqa_diamond_cot_zeroshot:0:auto"
   )
   
@@ -53,13 +54,13 @@ do
     # else
       
       lm_eval --model vllm \
-        --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8,max_length=32768 \
+        --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
         --tasks ${METRIC_NAME} \
         --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
         --batch_size $BATCH_SIZE \
         --num_fewshot $NUM_FEWSHOT \
         --log_samples \
-        --gen_kwargs do_sample=true,temperature=0.7,max_gen_toks=32000
+        --gen_kwargs do_sample=true,temperature=1.0,max_gen_toks=32000
     # fi
   done
 

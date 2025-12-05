@@ -40,6 +40,7 @@ do
     "humaneval:0"
     "mbpp:3"
     "humaneval_64:0"
+    # "mbpp_instruct:0"
   )
   
   # Iterate through each metric configuration
@@ -52,14 +53,26 @@ do
     # if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]; then
     #   echo "eval results for ${iter} (${METRIC_NAME}) exist. Skipping..."
     # else
-      lm_eval --model vllm \
-        --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
-        --tasks ${METRIC_NAME} \
-        --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
-        --batch_size auto \
-        --num_fewshot $NUM_FEWSHOT \
-        --log_samples \
-        --confirm_run_unsafe_code
+      if [[ "${METRIC_NAME}" == "mbpp_instruct" ]]; then
+        lm_eval --model vllm \
+          --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
+          --tasks ${METRIC_NAME} \
+          --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
+          --batch_size auto \
+          --num_fewshot $NUM_FEWSHOT \
+          --log_samples \
+          --gen_kwargs do_sample=true,temperature=1.0,max_gen_toks=4096 \
+          --confirm_run_unsafe_code
+      else
+        lm_eval --model vllm \
+          --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
+          --tasks ${METRIC_NAME} \
+          --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
+          --batch_size auto \
+          --num_fewshot $NUM_FEWSHOT \
+          --log_samples \
+          --confirm_run_unsafe_code
+      fi
     # fi
   done
 done

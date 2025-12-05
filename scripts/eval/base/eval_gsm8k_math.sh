@@ -41,6 +41,7 @@ do
     "minerva_math:4"
     "gsm8k_reasoning_base:0"
     "minerva_math_reasoning_base:0"
+    "minerva_math500:0"
   )
   
   # Iterate through each metric configuration
@@ -53,14 +54,25 @@ do
     # if [[ -d ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots ]]; then
     #   echo "eval results for ${iter} (${METRIC_NAME}) exist. Skipping..."
     # else
-      lm_eval --model vllm \
-        --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
-        --tasks ${METRIC_NAME} \
-        --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
-        --batch_size auto \
-        --num_fewshot $NUM_FEWSHOT \
-        --log_samples \
-        --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768 \
+      # Check if this is a reasoning benchmark
+      if [[ ${METRIC_NAME} == *"reasoning_base"* || ${METRIC_NAME} == *"minerva_math500"* ]]; then
+        lm_eval --model vllm \
+          --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
+          --tasks ${METRIC_NAME} \
+          --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
+          --batch_size auto \
+          --num_fewshot $NUM_FEWSHOT \
+          --log_samples \
+          --gen_kwargs do_sample=true,temperature=1.0,top_p=0.95,max_gen_toks=32768
+      else
+        lm_eval --model vllm \
+          --model_args pretrained=${CKPT_DIR},tensor_parallel_size=8,dtype=float32,gpu_memory_utilization=0.8 \
+          --tasks ${METRIC_NAME} \
+          --output_path ${CKPT_DIR}/eval_results/${METRIC_NAME}_${NUM_FEWSHOT}shots \
+          --batch_size auto \
+          --num_fewshot $NUM_FEWSHOT \
+          --log_samples
+      fi
     # fi
   done
 
