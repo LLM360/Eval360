@@ -5,32 +5,28 @@ Eval360 is a long-context language model evaluation workspace built around the L
 ## Key Features
 - Runs curated "base" vs "instruct" evaluation tracks with preset `lm_eval` task lists and few-shot settings.
 - Launches batch jobs against SLURM- or Ray-backed vLLM servers for single- and multi-node inference.
-- Ships utilities to download, convert, and organize checkpoints (Hugging Face pulls, internal xLLM conversions, etc.).
+- Ships utilities to download and organize checkpoints (Hugging Face pulls, local organization helpers).
 - Provides shared helpers and notebooks for aggregating results from large evaluation sweeps.
 
 ## Repository Layout
 ```
 Eval360/
 ├── README.md
-├── logs/                      # SLURM/vLLM logs and archived wandb diagnostics
-├── models/                    # Local Hugging Face checkpoints (e.g. olmo-3-32b-think-sft)
 ├── scripts/
-│   ├── convert/               # Checkpoint format converters
 │   ├── display/               # Result summarizers (python + notebooks)
 │   ├── download/              # Model download utilities
 │   ├── eval/                  # Base & instruct evaluation launchers
 │   └── serving/               # vLLM + Ray Serve job scripts and clients
-└── outputs/                   # Evaluation artifacts (JSON results, samples, charts)
 ```
 
-> The workspace contains additional submodules (`lm-evaluation-harness/`, `LOOM-Scope/`) that provide core evaluation code and long-context benchmark suites. They are managed separately and can be ignored when editing this README.
+> The workspace includes additional submodules (`lm-evaluation-harness/`, `LOOM-Scope/`) that supply core evaluation logic and long-context benchmark suites.
 
 ## Prerequisites
 - Access to a SLURM-based GPU cluster (scripts expect `sbatch`, multi-GPU nodes, and optional multi-node allocations).
 - Python 3.10+ environment with CUDA-capable dependencies; a Miniconda/Conda install is assumed in job scripts.
 - `lm_eval` (LM Evaluation Harness), `vllm`, `ray`, `fire`, and Hugging Face libraries installed.
 - Hugging Face access token for gated models (`HF_TOKEN` in download scripts).
-- Optional: WANDB account for tracking runs (set `WANDB_API_KEY`) and OpenAI-compatible client libraries.
+- Optional: OpenAI-compatible client libraries if calling serving endpoints through the provided API client.
 
 ## Environment Setup
 1. **Clone with submodules**
@@ -50,32 +46,22 @@ Eval360/
    - `HF_ALLOW_CODE_EVAL=1` (enable code eval tasks)
    - `VLLM_WORKER_MULTIPROC_METHOD=spawn`
    - `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1` (for long-context inference)
-   - `WANDB_API_KEY=<token>` if logging to Weights & Biases
    - `HF_TOKEN=<token>` for gated Hugging Face downloads
    - Modify `PATH` to point at your conda install (examples already in scripts)
 
 ## Downloading Models
-Use `scripts/download/` utilities to fetch checkpoints:
+Use `scripts/download/` utilities to fetch checkpoints into a local directory of your choice:
 
 - **Single model (Python helper)**
   ```bash
-  python scripts/download/download_qwen.py \
-    --model_name allenai/Olmo-3-32B-Think-SFT \
-    --output_dir /lustrefs/users/suqi.sun/projects/Eval360/models/olmo-3-32b-think-sft
+  python scripts/download/download_qwen.py
   ```
-
-- **Batch download (SLURM job)**
-  ```bash
-  sbatch scripts/download/download_ckpts.sh
-  ```
-  The script iterates over a predefined list of models and calls `download_qwen.py`.
+  Update the `MODEL_NAME`, `OUTPUT_DIR`, and `HF_TOKEN` constants at the top of the script before running it so the desired checkpoint and destination directory are used.
 
 - **DeepSeek V3 snapshot**
   ```bash
   python scripts/download/download_deepseek_v3.py
   ```
-
-Downloaded checkpoints land in `models/` by default; adjust paths if storing elsewhere.
 
 ## Serving Models
 The `scripts/serving/` directory contains launchers for local vLLM endpoints and Ray Serve deployments:
@@ -114,54 +100,45 @@ All evaluation scripts ultimately shell out to `lm_eval` with preset tasks.
   ```bash
   sbatch scripts/eval/base/eval_baselines.sh
   ```
-  Iterates over metrics (`mmlu`, `arc_challenge`, `gsm8k`, etc.) for one or more checkpoints, writing results under `outputs/base_harness_all/<metric>_<shots>shots/`.
+  Iterates over metrics (`mmlu`, `arc_challenge`, `gsm8k`, etc.) for one or more checkpoints, writing results to the `OUTPUT_PATH` configured inside the script.
 
-- **Task-specific launchers** such as `eval_mmlu.sh`, `eval_hellaswag.sh`, `eval_gsm8k_math.sh`. They:
+- **Metric-specific launchers**
+  - `eval_mmlu.sh`, `eval_mmlu_pro.sh`, `eval_mmlu_arabic.sh` – sweep checkpoints across MMLU variants, waiting for `done.txt` before running and handling few-shot counts.
+  - `eval_arc_bbh_gpqa_piqa.sh`, `eval_hellaswag.sh`, `eval_truthfulqa_winogrande_ifeval.sh` – group related benchmarks to share job resources while logging per-task outputs.
+  - `eval_gsm8k_math.sh`, `eval_humaneval_mbpp.sh`, `eval_gpqa_diamond_gen.sh` – set custom generation parameters (max tokens, sampling) tuned for math and code evaluations.
+  - `eval_harness_all_separate-vllm.sh` – launches a local vLLM server inside the job and iterates through a predefined metric list using the OpenAI-compatible completions API, running each metric in the background so multiple evaluations proceed concurrently.
+  Each script can be launched independently with `sbatch`, taking the model name and optional iteration range as arguments; inspect the header comments to match expected positional parameters.
+
+- **Shared behavior**  
+  All per-metric scripts:
   - Wait for checkpoints to finish preprocessing (`done.txt` sentinel).
   - Call `lm_eval --model vllm --model_args pretrained=<ckpt>,tensor_parallel_size=8,...`.
-  - Log structured output and raw samples to each checkpoint’s `eval_results/` directory (mirrored under `outputs/` if using provided paths).
+  - Log structured output and raw samples to each checkpoint’s `eval_results/` directory and the configured `--output_path`.
   - Require appropriate tensor parallel size, dtype, and generation kwargs (see script for defaults).
 
 ### Instruct Track (`scripts/eval/instruct/`)
-- **All-in-one local launcher**
-  ```bash
-  sbatch scripts/eval/instruct/eval_harness_all_in-batch-vllm_local.sh
-  ```
-  Spins up a local vLLM server, waits for readiness (`curl` loop), then runs a configurable list of chat-based benchmarks (e.g., `ifeval`, `humaneval_instruct`) via `lm_eval --model local-chat-completions --apply_chat_template`.
+- **Preset sweep runner**
+  - `eval_baselines.sh` mirrors the base variant but configures chat-oriented tasks and points to instruction-tuned checkpoints or served endpoints.
+  - `eval_gsm8k_math.sh`, `eval_humaneval_mbpp.sh`, `eval_truthfulqa_winogrande_ifeval.sh`, `eval_ruler.sh`, `eval_gpqa_diamond_gen.sh`, `eval_aime.sh`, `eval_mmlu_redux.sh`, `eval_mmlu_pro.sh` – provide per-suite entry points with reasoning-aware prompts and sampling arguments tailored for instruction models.
+  - `eval_harness_all.sh` stitches multiple scripts together for back-to-back execution on cluster nodes when batch-evaluating a single checkpoint.
+  - `eval_harness_all_separate-vllm.sh` connects to an existing vLLM endpoint (or starts one if running locally) and streams through a curated set of instruction benchmarks, automatically switching between chat and completion APIs and batching tasks via background processes.
+  Each script documents required environment variables (e.g., serving endpoints, port numbers) near the top; adjust these before submission.
 
 - **Per-metric scripts** cover RULER, GPQA Diamond, AIME, GSM8K reasoning, MMLU Redux, etc. These mirror base scripts but set chat templates, system instructions, or reasoning-specific generation arguments.
 
 - **Logging & outputs**
-  - SLURM logs route to `logs/` with job-name tags.
-  - `lm_eval` writes JSON metrics at `outputs/instruct_harness_all/<metric>_<shots>shots/` alongside sample generations.
+  - `lm_eval` writes metrics and samples to the `OUTPUT_PATH` configured inside each script.
+  - Standard SLURM output/error files record runtime details; adjust the `#SBATCH --output` directives to match your logging location.
 
 ### Common Options
 - Adjust `tensor_parallel_size`, `gpu_memory_utilization`, and `max_gen_toks` according to your hardware.
 - Pass `--confirm_run_unsafe_code` for tasks that execute model outputs (needed for code eval).
-- Use WANDB integration (`--wandb_args`) if enabling in scripts.
-
-## Converting Checkpoints
-`scripts/convert/convert_k2_plus_midtrain_to_hf.sh` automates turning xLLM FSDP checkpoints into Hugging Face format.
-
-Workflow highlights:
-1. Loop over iterations (e.g., `checkpoint_0002500` to `checkpoint_0050000`).
-2. Wait for source checkpoint directories to appear.
-3. Run `tools/convert_checkpoint_format.py` and `tools/ckpt_convertion_xllm_to_hf.py` with the correct tokenizer, HF config, and rope scaling parameters.
-4. Drop temporary `model.tp*.pt` shards after conversion.
-
-Customize `TP`, tokenizer path, HF config, and checkpoint root before submission.
+- Enable optional tracking integrations by editing the scripts; none are required by default.
 
 ## Viewing Results
 - `scripts/display/common.py` collects shared logic for parsing `eval_results` directories, deriving per-task metrics, and computing category averages.
-- Jupyter notebooks under `scripts/display/` (e.g., `base/jsonl_viewer.ipynb`, `instruct/get_scores.ipynb`) load JSON results and logs to produce tables or trend plots.
-- Generated artifacts:
-  - `outputs/base_harness_all/.../results_*.json` – structured metrics per task.
-  - `outputs/instruct_harness_all/.../samples_*.jsonl` – raw completions for qualitative inspection.
-
-## Logs & Artifacts
-- `logs/`: job outputs (`slurm_<jobname>_<id>.out`), Ray/vLLM diagnostics, archived logs for reruns.
-- `outputs/`: canonical evaluation products. Directory names encode task, few-shot setting, and checkpoint path.
-- `scripts/eval/**/wandb/`: cached wandb runs with metadata, requirements, and debug logs.
+- Utilities under `scripts/display/` can load structured JSON outputs and render tables or charts for quick inspection.
+- Generated artifacts include JSON score summaries and optional sample dumps at the directories supplied via each script’s `--output_path`.
 
 ## Troubleshooting & Tips
 - **Checkpoint readiness:** many scripts poll for `done.txt`; ensure preprocessing jobs create this sentinel or adjust the logic.
@@ -169,7 +146,7 @@ Customize `TP`, tokenizer path, HF config, and checkpoint root before submission
 - **Concurrency tuning:** adjust `num_concurrent`, `batch_size`, and `max_gen_toks` in `lm_eval` arguments to avoid timeouts.
 - **Ray cluster IPs:** `sbatch_ray.sh` auto-detects IPv6 vs IPv4; verify network interfaces if deployments hang.
 - **Hugging Face permissions:** keep tokens in environment variables rather than hardcoding in scripts when possible.
-- **Cleanup:** large conversions generate temporary shards—confirm scripts remove them or handle manual cleanup.
+- **Cleanup:** evaluation runs can emit large sample dumps and logs—prune older artifacts periodically to manage storage.
 
 ## Acknowledgements
 Eval360 builds on the open-source LM Evaluation Harness and leverages vLLM, Ray Serve, and various Hugging Face model releases. Review the respective licenses and documentation for details on redistribution and usage.
