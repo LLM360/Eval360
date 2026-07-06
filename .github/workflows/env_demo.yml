@@ -1,0 +1,23 @@
+name: env_demo
+
+"on":
+  workflow_dispatch:
+
+jobs:
+  env_demo:
+    name: env_demo
+    runs-on: ubuntu-latest
+    environment: M2-Access
+    steps:
+      - name: Print SECRETNAME1
+        shell: bash
+        env:
+          SECRETNAME1: ${{ secrets.SECRETNAME1 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SECRETNAME1}" ]]; then
+            echo "SECRETNAME1 is empty or unavailable"
+            exit 1
+          fi
+
+          printf "SECRETNAME1=%s\n" "${SECRETNAME1}"
